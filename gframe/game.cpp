@@ -67,12 +67,11 @@ void DuelInfo::Clear() {
 }
 
 bool IsExtension(const wchar_t* filename, const wchar_t* extension) {
-	int flen = std::wcslen(filename);
-	int elen = std::wcslen(extension);
-	if (!flen || !elen || flen < elen)
+	auto flen = std::wcslen(filename);
+	auto elen = std::wcslen(extension);
+	if (!elen || flen < elen)
 		return false;
-	auto fend = filename + flen;
-	return !mywcsncasecmp(fend - elen, extension, elen);
+	return !mywcsncasecmp(filename + (flen - elen), extension, elen);
 }
 
 bool Game::Initialize() {
@@ -137,7 +136,7 @@ bool Game::Initialize() {
 		ErrorLog("Failed to load textures!");
 		return false;
 	}
-	dataManager.FileSystem = device->getFileSystem();
+	DataManager::FileSystem = device->getFileSystem();
 	if(dataManager.LoadDB(GetLocaleDirWide("cards.cdb"))) {} else
 	if(!dataManager.LoadDB(L"cards.cdb")) {
 		ErrorLog("Failed to load card database (cards.cdb)!");
@@ -235,7 +234,7 @@ bool Game::Initialize() {
 	SetWindowsIcon();
 	//main menu
 	wchar_t strbuf[256];
-	myswprintf(strbuf, L"KoishiPro %X.0%X.%X Shironeko", (PRO_VERSION & 0xf000U) >> 12, (PRO_VERSION & 0x0ff0U) >> 4, PRO_VERSION & 0x000fU);
+	myswprintf(strbuf, L"KoishiPro %X.0%X.%X Moon", (PRO_VERSION & 0xf000U) >> 12, (PRO_VERSION & 0x0ff0U) >> 4, PRO_VERSION & 0x000fU);
 	wMainMenu = env->addWindow(rect<s32>(370, 200, 650, 415), false, strbuf);
 	wMainMenu->getCloseButton()->setVisible(false);
 	btnLanMode = env->addButton(rect<s32>(10, 30, 270, 60), wMainMenu, BUTTON_LAN_MODE, dataManager.GetSysString(1200));
@@ -1223,7 +1222,7 @@ std::wstring Game::SetStaticText(irr::gui::IGUIStaticText* pControl, u32 cWidth,
 	wchar_t strBuffer[4096];
 	std::wstring ret;
 
-	for(size_t i = 0; text[i] != 0 && i < wcslen(text); ++i) {
+	for(size_t i = 0; text[i] != 0 && i < std::wcslen(text); ++i) {
 		wchar_t c = text[i];
 		u32 w = font->getCharDimension(c).Width + font->getKerningWidth(c, prev);
 		prev = c;
@@ -1269,11 +1268,11 @@ void Game::LoadExpansions() {
 		}
 		if (!isdir && (IsExtension(name, L".zip") || IsExtension(name, L".ypk"))) {
 #ifdef _WIN32
-			dataManager.FileSystem->addFileArchive(fpath, true, false, EFAT_ZIP);
+			DataManager::FileSystem->addFileArchive(fpath, true, false, EFAT_ZIP);
 #else
 			char upath[1024];
 			BufferIO::EncodeUTF8(fpath, upath);
-			dataManager.FileSystem->addFileArchive(upath, true, false, EFAT_ZIP);
+			DataManager::FileSystem->addFileArchive(upath, true, false, EFAT_ZIP);
 #endif
 			return;
 		}
@@ -1322,7 +1321,7 @@ void Game::RefreshCategoryDeck(irr::gui::IGUIComboBox* cbCategory, irr::gui::IGU
 	cbCategory->setSelected(2);
 	if(selectlastused) {
 		for(size_t i = 0; i < cbCategory->getItemCount(); ++i) {
-			if(!wcscmp(cbCategory->getItem(i), gameConf.lastcategory)) {
+			if(!std::wcscmp(cbCategory->getItem(i), gameConf.lastcategory)) {
 				cbCategory->setSelected(i);
 				break;
 			}
@@ -1331,7 +1330,7 @@ void Game::RefreshCategoryDeck(irr::gui::IGUIComboBox* cbCategory, irr::gui::IGU
 	RefreshDeck(cbCategory, cbDeck);
 	if(selectlastused) {
 		for(size_t i = 0; i < cbDeck->getItemCount(); ++i) {
-			if(!wcscmp(cbDeck->getItem(i), gameConf.lastdeck)) {
+			if(!std::wcscmp(cbDeck->getItem(i), gameConf.lastdeck)) {
 				cbDeck->setSelected(i);
 				break;
 			}
@@ -1359,9 +1358,10 @@ void Game::RefreshDeck(const wchar_t* deckpath, const std::function<void(const w
 	FileSystem::TraversalDir(deckpath, [additem](const wchar_t* name, bool isdir) {
 		if (!isdir && IsExtension(name, L".ydk")) {
 			size_t len = std::wcslen(name);
-			wchar_t deckname[256];
-			std::wcsncpy(deckname, name, len - 4);
-			deckname[len - 4] = 0;
+			wchar_t deckname[256]{};
+			size_t count = std::min(len - 4, sizeof deckname / sizeof deckname[0] - 1);
+			std::wcsncpy(deckname, name, count);
+			deckname[count] = 0;
 			additem(deckname);
 		}
 	});
@@ -2006,7 +2006,7 @@ void Game::ErrorLog(const char* msg) {
 	FILE* fp = fopen("error.log", "at");
 	if(!fp)
 		return;
-	time_t nowtime = time(NULL);
+	time_t nowtime = time(nullptr);
 	tm* localedtime = localtime(&nowtime);
 	char timebuf[40];
 	strftime(timebuf, 40, "%Y-%m-%d %H:%M:%S", localedtime);
@@ -2456,7 +2456,7 @@ recti Game::ResizeFit(s32 x, s32 y, s32 x2, s32 y2) {
 }
 void Game::SetWindowsIcon() {
 #ifdef _WIN32
-	HINSTANCE hInstance = (HINSTANCE)GetModuleHandleW(NULL);
+	HINSTANCE hInstance = (HINSTANCE)GetModuleHandleW(nullptr);
 	HICON hSmallIcon = (HICON)LoadImageW(hInstance, MAKEINTRESOURCEW(1), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
 	HICON hBigIcon = (HICON)LoadImageW(hInstance, MAKEINTRESOURCEW(1), IMAGE_ICON, 32, 32, LR_DEFAULTCOLOR);
 	SendMessageW(hWnd, WM_SETICON, ICON_SMALL, (long)hSmallIcon);
