@@ -227,22 +227,34 @@ jobs:
 
     - name: Use premake to generate Visual Studio solution
       run: |
-        .\premake5.exe ${{ matrix.vs }} --audio-lib=${{ matrix.audiolib }}
+        .\premake5.exe ${{ matrix.vs }} --server-pro3-support --log-in-chat --server-pro2-support
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
 
     - name: Build solution
       run: |
-        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }}
+        msbuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=x64
+        mkdir dist
+        mkdir dist\MDPro2
+        copy bin\release\x64\ygoserver.dll dist\MDPro2\ygoserver.dll
+
+    - name: Use premake to generate Visual Studio solution(Pro3)
+      run: |
+        .\premake5.exe ${{ matrix.vs }} --server-pro3-support --log-in-chat
+
+    - name: Build solution(Pro3)
+      run: |
+        msbuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=x64
+        mkdir dist\MDPro3
+        copy bin\release\x64\ygoserver.dll dist\MDPro3\ygoserver.dll
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: YGOPro-${{ matrix.name }}
         path: |
-          bin/release/x86/YGOPro.exe
-          bin/release/x64/YGOPro.exe
+          dist\
 
   build-linux:
     strategy:
