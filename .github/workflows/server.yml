@@ -295,8 +295,14 @@ jobs:
           pattern: YGOPro-Server-*
           merge-multiple: false
 
+      - name: Delete old tag
+        run: |
+          git push --delete origin server-latest || true
+          git tag -d server-latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release
-        id: create_release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -304,7 +310,6 @@ jobs:
           tag_name: "server-latest"
           release_name: "server-latest"
           prerelease: true
-          draft: false
 
       - name: Upload Windows x86 Executable
         uses: actions/upload-release-asset@v1
