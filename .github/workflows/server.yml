@@ -15,14 +15,18 @@ jobs:
           - windows
           - windows-x64
           - windows-ygopro2-ai-server
+          - windows-mdpro2-server
+          - windows-mdpro3-server
 #          - windows-2025
         include:
           - name: windows
             os: windows-2022
             vs: vs2022
+            solution: ygopro.exe
           - name: windows-x64
             os: windows-2022
             vs: vs2022
+            solution: ygopro.exe
             x64: true
 #          - name: windows-2025
 #            os: windows-2025
@@ -31,7 +35,20 @@ jobs:
             os: windows-2022
             vs: vs2022
             x64: true
+            solution: AI.Server.exe
             ygopro2: true
+          - name: windows-mdpro2-server
+            os: windows-2022
+            vs: vs2022
+            x64: true
+            solution: ygoserver.dll
+            mdpro2: true
+          - name: windows-mdpro3-server
+            os: windows-2022
+            vs: vs2022
+            x64: true
+            solution: ygoserver.dll
+            mdpro3: true
 
     runs-on: ${{ matrix.os }}
 
@@ -110,23 +127,21 @@ jobs:
 
     - name: Use premake to generate Visual Studio solution
       run: |
-        .\premake5.exe ${{ matrix.vs }} ${{ matrix.ygopro2 && '--server-pro2-support' || '' }}
+        .\premake5.exe ${{ matrix.vs }} ${{ matrix.ygopro2 && '--server-pro2-support' || '' }} ${{ matrix.mdpro3 && '--server-pro3-support --log-in-chat' || '' }} ${{ matrix.mdpro2 && '--server-pro3-support --log-in-chat --server-pro2-support' || '' }}
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v2
 
     - name: Build solution
       run: |
-        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }}
+        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }} /p:OutDir=bin/release/${{ matrix.name }}/
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: YGOPro-Server-${{ matrix.name }}
         path: |
-          bin/release/x86/ygopro.exe
-          bin/release/x64/ygopro.exe
-          bin/release/x64/AI.Server.exe
+          bin/release/${{ matrix.name }}/{{ matrix.solution }}
 
   build-linux:
     strategy:
@@ -266,24 +281,38 @@ jobs:
           bin/release/ygopro
 
   publish:
-    needs: [build-windows]
+    needs: [build-windows, build-linux]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
-    - name: Download build artifacts
+    - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
-        pattern: YGOPro-Server-windows-* # the "windows" (no hyphen) artifact is ignored
-        merge-multiple: true
+        path: artifacts
+        create-artifact-folders: false
 
-    - name: GitHub Release
-      uses: salix5/action-automatic-releases@node20
+    - name: Organize release files
+      run: |
+        mkdir -p release
+        mkdir -p release/MDPro2
+        mkdir -p release/MDPro3
+        # Windows 文件
+        cp artifacts/windows-x64/x64/ygopro.exe release/
+        cp artifacts/windows-ygopro2-ai-server/x64/AI.Server.exe release/
+        cp artifacts/windows-mdpro2-server/x64/ygoserver.dll release/MDPro2/ygoserver.dll
+        cp artifacts/windows-mdpro3-server/x64/ygoserver.dll release/MDPro3/ygoserver.dll
+        
+        # Linux 文件
+        cp artifacts/ubuntu-*/ygopro release/ygopro-linux-${{ matrix.name }}
+        chmod +x release/ygopro-linux-*
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
       with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "server-latest"
+        tag_name: server-v$(date +%Y%m%d)
+        name: "Server Build $(date +%Y-%m-%d)"
+        body: "Automated server build including Windows and Linux binaries"
         prerelease: true
-        title: "Development Build (Server Mode)"
         files: |
-          x64/ygopro.exe
-          x64/AI.Server.exe
+          release/*
