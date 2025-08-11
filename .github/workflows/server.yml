@@ -307,7 +307,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-          pattern: release-*
+          pattern: YGOPro-Server-*
 
       - name: Debug artifacts directory
         run: |
@@ -320,8 +320,8 @@ jobs:
           name: "Server Latest Build"
           prerelease: true
           files: |
-            artifacts/release-windows/ygopro.exe
-            artifacts/release-windows-x64/ygopro.exe
-            artifacts/release-windows-ygopro2-ai-server/AI.Server.exe
-            artifacts/release-windows-mdpro2-server/ygoserver.dll
-            artifacts/release-windows-mdpro3-server/ygoserver.dll
+            artifacts/YGOPro-Server-windows/ygopro.exe
+            artifacts/YGOPro-Server-windows-x64/ygopro.exe
+            artifacts/YGOPro-Server-windows-ygopro2-ai-server/AI.Server.exe
+            artifacts/YGOPro-Server-windows-mdpro2-server/ygoserver.dll
+            artifacts/YGOPro-Server-windows-mdpro3-server/ygoserver.dll
