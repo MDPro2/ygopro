@@ -309,6 +309,10 @@ jobs:
           path: artifacts
           pattern: YGOPro-Server-*
 
+      - name: Debug artifacts directory
+        run: |
+          ls -laR artifacts
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
