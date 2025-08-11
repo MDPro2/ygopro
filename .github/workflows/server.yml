@@ -51,10 +51,6 @@ jobs:
             mdpro3: true
 
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
-      packages: write
-      actions: read
 
     steps:
     - name: Checkout repository with submodules
@@ -288,7 +284,10 @@ jobs:
     needs: [build-windows]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      packages: write
+      actions: read
     steps:
     - name: Download build artifacts
       uses: actions/download-artifact@v4
