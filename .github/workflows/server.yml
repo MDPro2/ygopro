@@ -301,8 +301,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: "server-v$(date +%Y%m%d)"
-          release_name: "Server Build $(date +'%Y-%m-%d')"
+          tag_name: "server-latest"
+          release_name: "server-latest"
           prerelease: true
           draft: false
 
