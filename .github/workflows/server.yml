@@ -51,6 +51,10 @@ jobs:
             mdpro3: true
 
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
+      packages: write
+      actions: read
 
     steps:
     - name: Checkout repository with submodules
@@ -135,8 +139,6 @@ jobs:
     - name: Build solution
       run: |
         MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }} /p:OutDir=../bin/release/${{ matrix.name }}/
-        dir bin/release/
-        dir bin/release/${{ matrix.name }}/
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -283,38 +285,27 @@ jobs:
           bin/release/ygopro
 
   publish:
-    needs: [build-windows, build-linux]
+    needs: [build-windows]
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
-    - name: Download all artifacts
+    - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
-        path: artifacts
-        create-artifact-folders: false
+        pattern: YGOPro-Server-windows-* # the "windows" (no hyphen) artifact is ignored
+        merge-multiple: true
 
-    - name: Organize release files
-      run: |
-        mkdir -p release
-        mkdir -p release/MDPro2
-        mkdir -p release/MDPro3
-        # Windows 文件
-        cp ./windows-x64/x64/ygopro.exe release/
-        cp ./windows-ygopro2-ai-server/x64/AI.Server.exe release/
-        cp ./windows-mdpro2-server/x64/ygoserver.dll release/MDPro2/ygoserver.dll
-        cp ./windows-mdpro3-server/x64/ygoserver.dll release/MDPro3/ygoserver.dll
-        
-        # Linux 文件
-        cp ./ubuntu-*/ygopro release/ygopro-linux-${{ matrix.name }}
-        chmod +x release/ygopro-linux-*
-
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+    - name: GitHub Release
+      uses: salix5/action-automatic-releases@node20
       with:
-        tag_name: server-v$(date +%Y%m%d)
-        name: "Server Build $(date +%Y-%m-%d)"
-        body: "Automated server build including Windows and Linux binaries"
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "server-latest"
         prerelease: true
+        title: "Development Build (Server Mode)"
         files: |
-          release/*
+          windows/ygopro.exe
+          windows-x64/ygopro.exe
+          windows-ygopro2-ai-server/AI.Server.exe
+          windows-mdpro2-server/ygoserver.dll
+          windows-mdpro3-server/ygoserver.dll
