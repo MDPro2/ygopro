@@ -303,8 +303,8 @@ jobs:
         prerelease: true
         title: "Development Build (Server Mode)"
         files: |
-          windows/ygopro.exe
-          windows-x64/ygopro.exe
-          windows-ygopro2-ai-server/AI.Server.exe
-          windows-mdpro2-server/ygoserver.dll
-          windows-mdpro3-server/ygoserver.dll
+          bin/release/windows/ygopro.exe
+          bin/release/windows-x64/ygopro.exe
+          bin/release/windows-ygopro2-ai-server/AI.Server.exe
+          bin/release/windows-mdpro2-server/ygoserver.dll
+          bin/release/windows-mdpro3-server/ygoserver.dll
