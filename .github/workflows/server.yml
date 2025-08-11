@@ -141,7 +141,7 @@ jobs:
       with:
         name: YGOPro-Server-${{ matrix.name }}
         path: |
-          bin/release/${{ matrix.name }}/{{ matrix.solution }}
+          bin/release/${{ matrix.name }}/${{ matrix.solution }}
 
   build-linux:
     strategy:
