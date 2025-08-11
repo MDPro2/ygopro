@@ -288,75 +288,36 @@ jobs:
       contents: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Delete old tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git fetch --tags
+          git tag -d server-latest || true
+          git push origin :refs/tags/server-latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
           pattern: YGOPro-Server-*
-          merge-multiple: false
-
-      - name: Delete old tag
-        run: |
-          git push --delete origin server-latest || true
-          git tag -d server-latest || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: "server-latest"
-          release_name: "server-latest"
+          name: "Server Latest Build"
           prerelease: true
-
-      - name: Upload Windows x86 Executable
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/YGOPro-Server-windows/ygopro.exe
-          asset_name: ygopro-windows.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload Windows x64 Executable
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/YGOPro-Server-windows-x64/ygopro.exe
-          asset_name: ygopro-windows-x64.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload AI Server Executable
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/YGOPro-Server-windows-ygopro2-ai-server/AI.Server.exe
-          asset_name: AI.Server.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload MDPro2 DLL
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/YGOPro-Server-windows-mdpro2-server/ygoserver.dll
-          asset_name: mdpro2.dll
-          asset_content_type: application/octet-stream
-
-      - name: Upload MDPro3 DLL
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/YGOPro-Server-windows-mdpro3-server/ygoserver.dll
-          asset_name: mdpro3.dll
-          asset_content_type: application/octet-stream
+          files: |
+            artifacts/YGOPro-Server-windows/ygopro.exe
+            artifacts/YGOPro-Server-windows-x64/ygopro.exe
+            artifacts/YGOPro-Server-windows-ygopro2-ai-server/AI.Server.exe
+            artifacts/YGOPro-Server-windows-mdpro2-server/ygoserver.dll
+            artifacts/YGOPro-Server-windows-mdpro3-server/ygoserver.dll
