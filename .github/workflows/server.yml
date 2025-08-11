@@ -134,7 +134,7 @@ jobs:
 
     - name: Build solution
       run: |
-        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }} /p:OutDir=bin/release/${{ matrix.name }}/
+        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }} /p:OutDir=../bin/release/${{ matrix.name }}/
         dir bin/release/
         dir bin/release/${{ matrix.name }}/
 
