@@ -51,6 +51,8 @@ jobs:
             mdpro3: true
 
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout repository with submodules
@@ -143,14 +145,24 @@ jobs:
         path: |
           bin/release/${{ matrix.name }}/${{ matrix.solution }}
 
+    - name: Delete old tag
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git fetch --tags
+        git tag -d ${{ matrix.name }} || true
+        git push origin :refs/tags/${{ matrix.name }} || true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Create Release
       id: create_release
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        tag_name: Server Latest
-        release_name: Release Server Latest
+        tag_name: ${{ matrix.name }}
+        release_name: Release ${{ matrix.name }}
         draft: false
         prerelease: false
     
