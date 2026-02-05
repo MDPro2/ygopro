@@ -8,6 +8,9 @@
 
 namespace ygo {
 
+const char* const ImageManager::SUPPORTED_EXTENSIONS[] = {"png", "jpg"};
+const size_t ImageManager::SUPPORTED_EXTENSIONS_COUNT = sizeof(SUPPORTED_EXTENSIONS) / sizeof(SUPPORTED_EXTENSIONS[0]);
+
 ImageManager imageManager;
 
 bool ImageManager::Initial() {
@@ -321,35 +324,27 @@ irr::video::ITexture* ImageManager::GetTextureFromFile(const char* file, irr::s3
  * Files in the expansions directory have priority, allowing custom pictures to be loaded without modifying the original files.
  * @return Image pointer. Must be dropped after use. */
 irr::video::IImage* ImageManager::GetImage(int code) {
-	char file[256];
-	irr::video::IImage* img = nullptr;
+	// Build path prefix list
+	std::vector<std::string> basePaths;
 	for(auto ex : mainGame->GetExpansionsListU()) {
-		if(img == nullptr) {
-			mysnprintf(file, "%s/pics/%d.png", ex.c_str(), code);
-			img = driver->createImageFromFile(file);
+		basePaths.push_back(ex + "/");
+	}
+	basePaths.push_back(mainGame->GetLocaleDir(""));
+	basePaths.push_back("");
+	
+	// Try all combinations
+	char file[256];
+	for(const auto& base : basePaths) {
+		for(size_t i = 0; i < SUPPORTED_EXTENSIONS_COUNT; ++i) {
+			mysnprintf(file, "%spics/%d.%s", base.c_str(), code, SUPPORTED_EXTENSIONS[i]);
+			irr::video::IImage* img = driver->createImageFromFile(file);
+			if(img != nullptr) {
+				return img;
+			}
 		}
-		if(img == nullptr) {
-			mysnprintf(file, "%s/pics/%d.jpg", ex.c_str(), code);
-			img = driver->createImageFromFile(file);
-		}
 	}
-	if(img == nullptr) {
-		mysnprintf(file, mainGame->GetLocaleDir("pics/%d.png"), code);
-		img = driver->createImageFromFile(file);
-	}
-	if(img == nullptr) {
-		mysnprintf(file, mainGame->GetLocaleDir("pics/%d.jpg"), code);
-		img = driver->createImageFromFile(file);
-	}
-	if(img == nullptr) {
-		mysnprintf(file, "pics/%d.png", code);
-		img = driver->createImageFromFile(file);
-	}
-	if(img == nullptr) {
-		mysnprintf(file, "pics/%d.jpg", code);
-		img = driver->createImageFromFile(file);
-	}
-	return img;
+	
+	return nullptr;
 }
 /** Load card picture.
  * @return Texture pointer. Remove via `driver->removeTexture` (do not `drop`). */
@@ -505,44 +500,32 @@ irr::video::ITexture* ImageManager::GetTextureField(int code) {
 	if(tit == tFields.end()) {
 		irr::s32 width = 512 * mainGame->xScale;
 		irr::s32 height = 512 * mainGame->yScale;
+		
+		// Build path prefix list
+		std::vector<std::string> basePaths;
+		for(auto ex : mainGame->GetExpansionsListU()) {
+			basePaths.push_back(ex + "/");
+		}
+		basePaths.push_back(mainGame->GetLocaleDir(""));
+		basePaths.push_back("");
+		
+		// Try all combinations
 		char file[256];
 		irr::video::ITexture *img = nullptr;
-		for(auto ex : mainGame->GetExpansionsListU()) {
-			if(img == nullptr) {
-				mysnprintf(file, "%s/pics/field/%d.png", ex.c_str(), code);
-				img = GetTextureFromFile(file, 512 * mainGame->xScale, 512 * mainGame->yScale);
+		for(const auto& base : basePaths) {
+			for(size_t i = 0; i < SUPPORTED_EXTENSIONS_COUNT; ++i) {
+				mysnprintf(file, "%spics/field/%d.%s", base.c_str(), code, SUPPORTED_EXTENSIONS[i]);
+				img = GetTextureFromFile(file, width, height);
+				if(img != nullptr) {
+					tFields[code] = img;
+					return img;
+				}
 			}
-			if(img == nullptr) {
-				mysnprintf(file, "%s/pics/field/%d.jpg", ex.c_str(), code);
-				img = GetTextureFromFile(file, 512 * mainGame->xScale, 512 * mainGame->yScale);
-			}
 		}
-		if(img == nullptr) {
-			mysnprintf(file, mainGame->GetLocaleDir("pics/field/%d.png"), code);
-			img = GetTextureFromFile(file, 512 * mainGame->xScale, 512 * mainGame->yScale);
-		}
-		if(img == nullptr) {
-			mysnprintf(file, mainGame->GetLocaleDir("pics/field/%d.jpg"), code);
-			img = GetTextureFromFile(file, 512 * mainGame->xScale, 512 * mainGame->yScale);
-		}
-		if(img == nullptr) {
-			mysnprintf(file, "pics/field/%d.png", code);
-			img = GetTextureFromFile(file, width, height);
-		}
-		if(img == nullptr) {
-			mysnprintf(file, "pics/field/%d.jpg", code);
-			img = GetTextureFromFile(file, width, height);
-			if(img == nullptr) {
-				tFields[code] = nullptr;
-				return nullptr;
-			} else {
-				tFields[code] = img;
-				return img;
-			}
-		} else {
-			tFields[code] = img;
-			return img;
-		}
+		
+		// Not found
+		tFields[code] = nullptr;
+		return nullptr;
 	}
 	if(tit->second)
 		return tit->second;

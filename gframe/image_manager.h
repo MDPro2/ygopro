@@ -13,6 +13,10 @@ class ImageManager {
 private:
 	irr::video::ITexture* addTexture(const char* name, irr::video::IImage* srcimg, irr::s32 width, irr::s32 height);
 public:
+	// Supported image file extensions
+	static const char* const SUPPORTED_EXTENSIONS[];
+	static const size_t SUPPORTED_EXTENSIONS_COUNT;
+	
 	std::vector<std::wstring> ImageList[7];
 	int saved_image_id[7];
 	bool Initial();
