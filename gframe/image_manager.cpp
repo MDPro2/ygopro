@@ -317,8 +317,7 @@ irr::video::ITexture* ImageManager::GetTextureFromFile(const char* file, irr::s3
 	mysnprintf(name, "%s/%d_%d", file, width, height);
 	return addTexture(name, img, width, height);
 }
-void* ImageManager::LoadFromSearchPathsImpl(int code, const char* subpath, const std::vector<const char*>& extensions,
-                                              void* (*callback)(void*, const char*), void* userdata) {
+void* ImageManager::LoadFromSearchPathsImpl(int code, const char* subpath, const std::vector<const char*>& extensions, void* (*callback)(void*, const char*), void* userdata) {
 	// Build base path list
 	std::vector<std::string> basePaths;
 	for(auto ex : mainGame->GetExpansionsListU()) {

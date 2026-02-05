@@ -14,8 +14,7 @@ private:
 	irr::video::ITexture* addTexture(const char* name, irr::video::IImage* srcimg, irr::s32 width, irr::s32 height);
 	
 	// Internal implementation using void* for type erasure
-	void* LoadFromSearchPathsImpl(int code, const char* subpath, const std::vector<const char*>& extensions, 
-	                               void* (*callback)(void*, const char*), void* userdata);
+	void* LoadFromSearchPathsImpl(int code, const char* subpath, const std::vector<const char*>& extensions, void* (*callback)(void*, const char*), void* userdata);
 	
 	// Load file from search paths (expansions, locale, default) with callback
 	template<typename Func>
