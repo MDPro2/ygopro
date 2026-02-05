@@ -8,9 +8,6 @@
 
 namespace ygo {
 
-const char* const ImageManager::SUPPORTED_EXTENSIONS[] = {"png", "jpg"};
-const size_t ImageManager::SUPPORTED_EXTENSIONS_COUNT = sizeof(SUPPORTED_EXTENSIONS) / sizeof(SUPPORTED_EXTENSIONS[0]);
-
 ImageManager imageManager;
 
 bool ImageManager::Initial() {
@@ -320,11 +317,9 @@ irr::video::ITexture* ImageManager::GetTextureFromFile(const char* file, irr::s3
 	mysnprintf(name, "%s/%d_%d", file, width, height);
 	return addTexture(name, img, width, height);
 }
-/** Load card picture from `expansions` or `pics` folder.
- * Files in the expansions directory have priority, allowing custom pictures to be loaded without modifying the original files.
- * @return Image pointer. Must be dropped after use. */
-irr::video::IImage* ImageManager::GetImage(int code) {
-	// Build path prefix list
+void* ImageManager::LoadFromSearchPathsImpl(int code, const char* subpath, const std::vector<const char*>& extensions,
+                                              void* (*callback)(void*, const char*), void* userdata) {
+	// Build base path list
 	std::vector<std::string> basePaths;
 	for(auto ex : mainGame->GetExpansionsListU()) {
 		basePaths.push_back(ex + "/");
@@ -335,16 +330,23 @@ irr::video::IImage* ImageManager::GetImage(int code) {
 	// Try all combinations
 	char file[256];
 	for(const auto& base : basePaths) {
-		for(size_t i = 0; i < SUPPORTED_EXTENSIONS_COUNT; ++i) {
-			mysnprintf(file, "%spics/%d.%s", base.c_str(), code, SUPPORTED_EXTENSIONS[i]);
-			irr::video::IImage* img = driver->createImageFromFile(file);
-			if(img != nullptr) {
-				return img;
+		for(const auto& ext : extensions) {
+			mysnprintf(file, "%s%s/%d.%s", base.c_str(), subpath, code, ext);
+			void* result = callback(userdata, file);
+			if(result != nullptr) {
+				return result;
 			}
 		}
 	}
-	
 	return nullptr;
+}
+/** Load card picture from `expansions` or `pics` folder.
+ * Files in the expansions directory have priority, allowing custom pictures to be loaded without modifying the original files.
+ * @return Image pointer. Must be dropped after use. */
+irr::video::IImage* ImageManager::GetImage(int code) {
+	return LoadFromSearchPaths(code, "pics", {"png", "jpg"}, [this](const char* file) {
+		return driver->createImageFromFile(file);
+	});
 }
 /** Load card picture.
  * @return Texture pointer. Remove via `driver->removeTexture` (do not `drop`). */
@@ -501,31 +503,12 @@ irr::video::ITexture* ImageManager::GetTextureField(int code) {
 		irr::s32 width = 512 * mainGame->xScale;
 		irr::s32 height = 512 * mainGame->yScale;
 		
-		// Build path prefix list
-		std::vector<std::string> basePaths;
-		for(auto ex : mainGame->GetExpansionsListU()) {
-			basePaths.push_back(ex + "/");
-		}
-		basePaths.push_back(mainGame->GetLocaleDir(""));
-		basePaths.push_back("");
+		auto img = LoadFromSearchPaths(code, "pics/field", {"png", "jpg"}, [this, width, height](const char* file) {
+			return GetTextureFromFile(file, width, height);
+		});
 		
-		// Try all combinations
-		char file[256];
-		irr::video::ITexture *img = nullptr;
-		for(const auto& base : basePaths) {
-			for(size_t i = 0; i < SUPPORTED_EXTENSIONS_COUNT; ++i) {
-				mysnprintf(file, "%spics/field/%d.%s", base.c_str(), code, SUPPORTED_EXTENSIONS[i]);
-				img = GetTextureFromFile(file, width, height);
-				if(img != nullptr) {
-					tFields[code] = img;
-					return img;
-				}
-			}
-		}
-		
-		// Not found
-		tFields[code] = nullptr;
-		return nullptr;
+		tFields[code] = img;
+		return img;
 	}
 	if(tit->second)
 		return tit->second;

@@ -12,11 +12,23 @@ namespace ygo {
 class ImageManager {
 private:
 	irr::video::ITexture* addTexture(const char* name, irr::video::IImage* srcimg, irr::s32 width, irr::s32 height);
-public:
-	// Supported image file extensions
-	static const char* const SUPPORTED_EXTENSIONS[];
-	static const size_t SUPPORTED_EXTENSIONS_COUNT;
 	
+	// Internal implementation using void* for type erasure
+	void* LoadFromSearchPathsImpl(int code, const char* subpath, const std::vector<const char*>& extensions, 
+	                               void* (*callback)(void*, const char*), void* userdata);
+	
+	// Load file from search paths (expansions, locale, default) with callback
+	template<typename Func>
+	auto LoadFromSearchPaths(int code, const char* subpath, const std::vector<const char*>& extensions, Func callback) -> decltype(callback("")) {
+		using RetType = decltype(callback(""));
+		auto wrapper = [](void* userdata, const char* file) -> void* {
+			auto& func = *static_cast<Func*>(userdata);
+			return static_cast<void*>(func(file));
+		};
+		return static_cast<RetType>(LoadFromSearchPathsImpl(code, subpath, extensions, wrapper, &callback));
+	}
+	
+public:
 	std::vector<std::wstring> ImageList[7];
 	int saved_image_id[7];
 	bool Initial();
