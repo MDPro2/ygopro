@@ -10,6 +10,8 @@
 namespace ygo {
 
 class ImageManager {
+private:
+	irr::video::ITexture* addTexture(const char* name, irr::video::IImage* srcimg, irr::s32 width, irr::s32 height);
 public:
 	std::vector<std::wstring> ImageList[7];
 	int saved_image_id[7];
@@ -23,6 +25,8 @@ public:
 	void ClearTexture();
 	void ResizeTexture();
 	irr::video::ITexture* GetTextureFromFile(const char* file, irr::s32 width, irr::s32 height);
+	irr::video::IImage* GetImage(int code);
+	irr::video::ITexture* GetTexture(int code, irr::s32 width, irr::s32 height);
 	irr::video::ITexture* GetTexture(int code, bool fit = false);
 	irr::video::ITexture* GetBigPicture(int code, float zoom);
 	irr::video::ITexture* GetTextureThumb(int code);

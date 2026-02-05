@@ -213,7 +213,8 @@ void ImageManager::ResizeTexture() {
 	if(!tBackGround_deck)
 		tBackGround_deck = tBackGround;
 }
-// function by Warr1024, from https://github.com/minetest/minetest/issues/2419 , modified
+/** Scale image using nearest neighbor anti-aliasing.
+ * Function by Warr1024, from https://github.com/minetest/minetest/issues/2419, modified. */
 void imageScaleNNAA(irr::video::IImage *src, irr::video::IImage *dest) {
 	const auto& srcDim = src->getDimension();
 	const auto& destDim = dest->getDimension();
@@ -286,22 +287,84 @@ void imageScaleNNAA(irr::video::IImage *src, irr::video::IImage *dest) {
 	}
 } // end of parallel region
 }
-irr::video::ITexture* ImageManager::GetTextureFromFile(const char* file, irr::s32 width, irr::s32 height) {
-	irr::video::ITexture* texture;
-	irr::video::IImage* srcimg = driver->createImageFromFile(file);
+/** Convert image to texture, resizing if needed.
+ * @param name Texture name (Irrlicht texture key).
+ * @param srcimg Source image; will be dropped by this function.
+ * @return Texture pointer. Remove via `driver->removeTexture` (do not `drop`). */
+irr::video::ITexture* ImageManager::addTexture(const char* name, irr::video::IImage* srcimg, irr::s32 width, irr::s32 height) {
 	if(srcimg == nullptr)
 		return nullptr;
+	irr::video::ITexture* texture;
 	if(srcimg->getDimension() == irr::core::dimension2d<irr::u32>(width, height)) {
-		texture = driver->addTexture(file, srcimg);
+		texture = driver->addTexture(name, srcimg);
 	} else {
-		irr::video::IImage *destimg = driver->createImage(srcimg->getColorFormat(), irr::core::dimension2d<irr::u32>(width, height));
+		irr::video::IImage* destimg = driver->createImage(srcimg->getColorFormat(), irr::core::dimension2d<irr::u32>(width, height));
 		imageScaleNNAA(srcimg, destimg);
-		texture = driver->addTexture(file, destimg);
+		texture = driver->addTexture(name, destimg);
 		destimg->drop();
 	}
 	srcimg->drop();
 	return texture;
 }
+/** Load image from file and convert to texture.
+ * @return Texture pointer. Remove via `driver->removeTexture` (do not `drop`). */
+irr::video::ITexture* ImageManager::GetTextureFromFile(const char* file, irr::s32 width, irr::s32 height) {
+	irr::video::IImage* img = driver->createImageFromFile(file);
+	if(img == nullptr) {
+		return nullptr;
+	}
+	char name[256];
+	mysnprintf(name, "%s/%d_%d", file, width, height);
+	return addTexture(name, img, width, height);
+}
+/** Load card picture from `expansions` or `pics` folder.
+ * Files in the expansions directory have priority, allowing custom pictures to be loaded without modifying the original files.
+ * @return Image pointer. Must be dropped after use. */
+irr::video::IImage* ImageManager::GetImage(int code) {
+	char file[256];
+	irr::video::IImage* img = nullptr;
+	for(auto ex : mainGame->GetExpansionsListU()) {
+		if(img == nullptr) {
+			mysnprintf(file, "%s/pics/%d.png", ex.c_str(), code);
+			img = driver->createImageFromFile(file);
+		}
+		if(img == nullptr) {
+			mysnprintf(file, "%s/pics/%d.jpg", ex.c_str(), code);
+			img = driver->createImageFromFile(file);
+		}
+	}
+	if(img == nullptr) {
+		mysnprintf(file, mainGame->GetLocaleDir("pics/%d.png"), code);
+		img = driver->createImageFromFile(file);
+	}
+	if(img == nullptr) {
+		mysnprintf(file, mainGame->GetLocaleDir("pics/%d.jpg"), code);
+		img = driver->createImageFromFile(file);
+	}
+	if(img == nullptr) {
+		mysnprintf(file, "pics/%d.png", code);
+		img = driver->createImageFromFile(file);
+	}
+	if(img == nullptr) {
+		mysnprintf(file, "pics/%d.jpg", code);
+		img = driver->createImageFromFile(file);
+	}
+	return img;
+}
+/** Load card picture.
+ * @return Texture pointer. Remove via `driver->removeTexture` (do not `drop`). */
+irr::video::ITexture* ImageManager::GetTexture(int code, irr::s32 width, irr::s32 height) {
+	irr::video::IImage* img = GetImage(code);
+	if(img == nullptr) {
+		return nullptr;
+	}
+	char name[256];
+	mysnprintf(name, "pics/%d/%d_%d", code, width, height);
+	return addTexture(name, img, width, height);
+}
+/** Load managed card picture texture.
+ * @param fit Resize to fit scale if true.
+ * @return Texture pointer. Should NOT be removed nor dropped. */
 irr::video::ITexture* ImageManager::GetTexture(int code, bool fit) {
 	if(code == 0)
 		return fit ? tUnknownFit : tUnknown;
@@ -316,42 +379,17 @@ irr::video::ITexture* ImageManager::GetTexture(int code, bool fit) {
 	}
 	auto tit = tMap[fit ? 1 : 0].find(code);
 	if(tit == tMap[fit ? 1 : 0].end()) {
-		char file[256];
-		irr::video::ITexture *img = nullptr;
-		for(auto ex : mainGame->GetExpansionsListU()) {
-			if(img == nullptr) {
-				mysnprintf(file, "%s/pics/%d.png", ex.c_str(), code);
-				img = GetTextureFromFile(file, width, height);
-			}
-			if(img == nullptr) {
-				mysnprintf(file, "%s/pics/%d.jpg", ex.c_str(), code);
-				img = GetTextureFromFile(file, width, height);
-			}
-		}
-		if(img == nullptr) {
-			mysnprintf(file, mainGame->GetLocaleDir("pics/%d.png"), code);
-			img = GetTextureFromFile(file, width, height);
-		}
-		if(img == nullptr) {
-			mysnprintf(file, mainGame->GetLocaleDir("pics/%d.jpg"), code);
-			img = GetTextureFromFile(file, width, height);
-		}
-		if(img == nullptr) {
-			mysnprintf(file, "pics/%d.png", code);
-			img = GetTextureFromFile(file, width, height);
-		}
-		if(img == nullptr) {
-			mysnprintf(file, "pics/%d.jpg", code);
-			img = GetTextureFromFile(file, width, height);
-		}
-		tMap[fit ? 1 : 0][code] = img;
-		return (img == nullptr) ? (fit ? tUnknownFit : tUnknown) : img;
+		irr::video::ITexture* texture = GetTexture(code, width, height);
+		tMap[fit ? 1 : 0][code] = texture;
+		return (texture == nullptr) ? (fit ? tUnknownFit : tUnknown) : texture;
 	}
 	if(tit->second)
 		return tit->second;
 	else
 		return fit ? tUnknownFit : tUnknown;
 }
+/** Load managed card picture texture with zoom.
+ * @return Texture pointer. Should NOT be removed nor dropped. */
 irr::video::ITexture* ImageManager::GetBigPicture(int code, float zoom) {
 	if(code == 0)
 		return tUnknown;
@@ -359,33 +397,15 @@ irr::video::ITexture* ImageManager::GetBigPicture(int code, float zoom) {
 		driver->removeTexture(tBigPicture);
 		tBigPicture = nullptr;
 	}
-	irr::video::ITexture* texture;
-	char file[256];
-	irr::video::IImage *srcimg = nullptr;
-	for(auto ex : mainGame->GetExpansionsListU())
-		if(srcimg == nullptr) {
-			mysnprintf(file, "%s/pics/%d.jpg", ex.c_str(), code);
-			srcimg = driver->createImageFromFile(file);
-		}
-	if(srcimg == nullptr) {
-		mysnprintf(file, "pics/%d.jpg", code);
-		srcimg = driver->createImageFromFile(file);
-	}
-	if(srcimg == nullptr) {
+	irr::video::IImage* img = GetImage(code);
+	if(img == nullptr) {
 		return tUnknown;
 	}
-	if(zoom == 1) {
-		texture = driver->addTexture(file, srcimg);
-	} else {
-		auto origsize = srcimg->getDimension();
-		irr::video::IImage* destimg = driver->createImage(srcimg->getColorFormat(), irr::core::dimension2d<irr::u32>(origsize.Width * zoom, origsize.Height * zoom));
-		imageScaleNNAA(srcimg, destimg);
-		texture = driver->addTexture(file, destimg);
-		destimg->drop();
-	}
-	srcimg->drop();
-	tBigPicture = texture;
-	return texture;
+	char name[256];
+	mysnprintf(name, "pics/%d/big", code);
+	auto origsize = img->getDimension();
+	tBigPicture = addTexture(name, img, origsize.Width * zoom, origsize.Height * zoom);
+	return tBigPicture;
 }
 int ImageManager::LoadThumbThread() {
 	while(true) {
@@ -398,18 +418,7 @@ int ImageManager::LoadThumbThread() {
 		int code = imageManager.tThumbLoadingCodes.front();
 		imageManager.tThumbLoadingCodes.pop();
 		imageManager.tThumbLoadingMutex.unlock();
-		char file[256];
-		irr::video::IImage *img = nullptr;
-		for(auto ex : mainGame->GetExpansionsListU()) {
-			if(img == nullptr) {
-				mysnprintf(file, "%s/pics/%d.jpg", ex.c_str(), code);
-				img = imageManager.driver->createImageFromFile(file);
-			}
-		}
-		if(img == nullptr) {
-			mysnprintf(file, "pics/%d.jpg", code);
-			img = imageManager.driver->createImageFromFile(file);
-		}
+		irr::video::IImage* img = imageManager.GetImage(code);
 		if(img != nullptr) {
 			int width = CARD_THUMB_WIDTH * mainGame->xScale;
 			int height = CARD_THUMB_HEIGHT * mainGame->yScale;
@@ -440,6 +449,8 @@ int ImageManager::LoadThumbThread() {
 	}
 	return 0;
 }
+/** Load managed card thumbnail texture.
+ * @return Texture pointer. Should NOT be removed nor dropped. */
 irr::video::ITexture* ImageManager::GetTextureThumb(int code) {
 	if(code == 0)
 		return tUnknownThumb;
@@ -447,19 +458,9 @@ irr::video::ITexture* ImageManager::GetTextureThumb(int code) {
 	if(tit == tThumb.end() && !mainGame->gameConf.use_image_load_background_thread) {
 		int width = CARD_THUMB_WIDTH * mainGame->xScale;
 		int height = CARD_THUMB_HEIGHT * mainGame->yScale;
-		char file[256];
-		irr::video::ITexture *img = nullptr;
-		for(auto ex : mainGame->GetExpansionsListU())
-			if(img == nullptr) {
-				mysnprintf(file, "%s/pics/%d.jpg", ex.c_str(), code);
-				img = GetTextureFromFile(file, width, height);
-			}
-		if(img == nullptr) {
-			mysnprintf(file, "pics/%d.jpg", code);
-			img = GetTextureFromFile(file, width, height);
-		}
-		tThumb[code] = img;
-		return (img == nullptr) ? tUnknownThumb : img;
+		irr::video::ITexture* texture = GetTexture(code, width, height);
+		tThumb[code] = texture;
+		return (texture == nullptr) ? tUnknownThumb : texture;
 	}
 	if(tit == tThumb.end() || tit->second == tLoading) {
 		imageManager.tThumbLoadingMutex.lock();
@@ -467,7 +468,7 @@ irr::video::ITexture* ImageManager::GetTextureThumb(int code) {
 		if(lit != tThumbLoading.end()) {
 			if(lit->second != nullptr) {
 				char textureName[256];
-				mysnprintf(textureName, "pics/%d.jpg_thumbnail", code); // not an actual file
+				mysnprintf(textureName, "pics/%d/thumbnail", code);
 				irr::video::ITexture* texture = driver->addTexture(textureName, lit->second); // textures must be added in the main thread due to OpenGL
 				lit->second->drop();
 				tThumb[code] = texture;
@@ -495,7 +496,8 @@ irr::video::ITexture* ImageManager::GetTextureThumb(int code) {
 	else
 		return tUnknownThumb;
 }
-
+/** Load managed duel field texture.
+ * @return Texture pointer. Should NOT be removed nor dropped. */
 irr::video::ITexture* ImageManager::GetTextureField(int code) {
 	if(code == 0)
 		return nullptr;
