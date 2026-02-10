@@ -4,6 +4,8 @@
 #include "config.h"
 #include "data_manager.h"
 #include <unordered_map>
+#include <vector>
+#include <string>
 #include <queue>
 #include <mutex>
 
@@ -11,6 +13,7 @@ namespace ygo {
 
 class ImageManager {
 private:
+	void resizeImage(irr::video::IImage* src, irr::video::IImage* dest, bool use_threading);
 	irr::video::ITexture* addTexture(const char* name, irr::video::IImage* srcimg, irr::s32 width, irr::s32 height);
 	
 	// Internal implementation using void* for type erasure
@@ -26,7 +29,6 @@ private:
 		};
 		return static_cast<RetType>(LoadFromSearchPathsImpl(code, subpath, extensions, wrapper, &callback));
 	}
-	
 public:
 	std::vector<std::wstring> ImageList[7];
 	int saved_image_id[7];
