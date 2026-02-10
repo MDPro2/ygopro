@@ -254,7 +254,7 @@ void SoundManager::PlaySoundEffect(int sound) {
 		return;
 	}
 	wchar_t soundNameW[32];
-	BufferIO::DecodeUTF8(soundName, soundNameW);
+	BufferIO::DecodeUTF8(soundName.c_str(), soundNameW);
 	wchar_t soundPathW[40];
 	myswprintf(soundPathW, L"./sound/%ls.wav", soundNameW);
 	PlaySound(soundPathW);
