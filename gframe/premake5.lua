@@ -1,7 +1,7 @@
 include "lzma/."
 
 if SERVER_MODE then
-if SERVER_PRO3_SUPPORT then
+if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT then
 project "ygoserver"
     kind "SharedLib"
 else
@@ -23,6 +23,10 @@ end
     if SERVER_PRO3_SUPPORT then
         files { "gframe.h", "serverapi.cpp", "serverapi.h" }
         defines { "SERVER_PRO3_SUPPORT" }
+    end
+    if SERVER_YGOPRO3_SUPPORT then
+        files { "gframe.h", "serverapi.cpp", "serverapi.h" }
+        defines { "SERVER_YGOPRO3_SUPPORT" }
     end
     includedirs { "../ocgcore" }
     links { "ocgcore", "clzma", "sqlite3", "event" }
@@ -125,11 +129,11 @@ if not SERVER_MODE then
 end
 
     filter "system:windows"
-if not SERVER_PRO3_SUPPORT then
+if not (SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT) then
         entrypoint "mainCRTStartup"
 end
         files "ygopro.rc"
-if SERVER_PRO2_SUPPORT and not SERVER_PRO3_SUPPORT then
+if SERVER_PRO2_SUPPORT and not (SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT) then
         targetname ("AI.Server")
 end
 if SERVER_MODE then

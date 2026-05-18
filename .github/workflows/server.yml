@@ -7,33 +7,58 @@ on:
     branches: [ "server" ]
 
 jobs:
-  build-windows:
+  build:
     strategy:
       fail-fast: false
       matrix:
         name:
-          - windows
+          # - windows
           - windows-x64
-          - windows-ygopro2-ai-server
+          - windows-ygopro2-server
+          # - windows-mdpro2-server
+          # - windows-mdpro3-server
 #          - windows-2025
         include:
-          - name: windows
-            os: windows-2022
-            vs: vs2022
+          # - name: windows
+          #   os: windows-2022
+          #   vs: vs2022
+          #   solution: ygopro.exe
           - name: windows-x64
             os: windows-2022
             vs: vs2022
+            solution: ygopro.exe
             x64: true
 #          - name: windows-2025
 #            os: windows-2025
 #            vs: vs2025 # to be enabled after the release of Visual Studio 2025
-          - name: windows-ygopro2-ai-server
+          - name: windows-ygopro2-server
             os: windows-2022
             vs: vs2022
             x64: true
+            solution: AI.Server.exe
             ygopro2: true
+          # - name: windows-mdpro2-server
+          #   os: windows-2022
+          #   vs: vs2022
+          #   x64: true
+          #   solution: ygoserver.dll
+          #   mdpro2: true
+          # - name: windows-mdpro3-server
+          #   os: windows-2022
+          #   vs: vs2022
+          #   x64: true
+          #   solution: ygoserver.dll
+          #   mdpro3: true
+          - name: windows-ygopro3-server
+            os: windows-2022
+            vs: vs2022
+            x64: true
+            solution: ygoserver.dll
+            mdpro2: true
 
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write
 
     steps:
     - name: Checkout repository with submodules
@@ -99,7 +124,7 @@ jobs:
         move sqlite-amalgamation-3490100 sqlite3
 
     - name: Download irrlicht
-      if: matrix.ygopro2 == true
+      if: matrix.ygopro2 == true || matrix.mdpro2 == true || matrix.mdpro3 == true || matrix.ygopro3 == true
       run: |
         git clone --depth=1 https://github.com/mercury233/irrlicht
 
@@ -109,24 +134,29 @@ jobs:
         xcopy /E resource\* .
 
     - name: Use premake to generate Visual Studio solution
+      if: matrix.ygopro3 == true
       run: |
-        .\premake5.exe ${{ matrix.vs }} ${{ matrix.ygopro2 && '--server-pro2-support' || '' }}
+        .\premake5.exe --server-ygopro3-support --log-in-chat
+
+    - name: Use premake to generate Visual Studio solution
+      if: matrix.ygopro3 != true
+      run: |
+        .\premake5.exe ${{ matrix.vs }} ${{ matrix.ygopro2 && '--server-pro2-support' || '' }} ${{ matrix.mdpro3 && '--server-pro3-support --log-in-chat' || '' }} ${{ matrix.mdpro2 && '--server-pro3-support --log-in-chat --server-pro2-support' || '' }}
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
 
     - name: Build solution
       run: |
-        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }}
+        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }} /p:OutDir=../bin/release/${{ matrix.name }}/
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v6
       with:
-        name: YGOPro-Server-${{ matrix.name }}
+        name: ${{ matrix.solution }}
+        retention-days: 1
         path: |
-          bin/release/x86/ygopro.exe
-          bin/release/x64/ygopro.exe
-          bin/release/x64/AI.Server.exe
+          bin/release/${{ matrix.name }}/${{ matrix.solution }}
 
   build-linux:
     strategy:
@@ -137,6 +167,7 @@ jobs:
           - ubuntu-24
           - ubuntu-static-link
           - ubuntu-zip-support
+          - ubuntu-pro3-so
         include:
           - name: ubuntu-22
             os: ubuntu-22.04
@@ -152,6 +183,18 @@ jobs:
             os: ubuntu-22.04
             premake-version: 5.0.0-beta4
             zip-support: true
+          - name: ubuntu-pro3-so
+            os: ubuntu-22.04
+            premake-version: 5.0.0-beta4
+            static-link: true
+            zip-support: true
+            pro3: true
+          - name: ubuntu-pro3-so
+            os: ubuntu-22.04
+            premake-version: 5.0.0-beta4
+            static-link: true
+            zip-support: true
+            ygopro3: true
 
     runs-on: ${{ matrix.os }}
 
@@ -250,6 +293,8 @@ jobs:
     - name: Use premake to generate make files
       run: |
         ./premake5 gmake ${{ matrix.zip-support && '--server-zip-support' || '' }} \
+          ${{ matrix.pro3 && '--server-pro3-support --log-in-chat' || '' }} \
+          ${{ matrix.ygopro3 && '--server-ygopro3-support --log-in-chat' || '' }} \
           ${{ matrix.static-link && '--build-sqlite --build-event' || '' }}
 
     - name: Make
@@ -263,27 +308,438 @@ jobs:
       with:
         name: YGOPro-Server-${{ matrix.name }}
         path: |
-          bin/release/ygopro
+          bin/release/${{ matrix.pro3 && 'libygoserver.so' || 'ygopro' }}
 
-  publish:
-    needs: [build-windows]
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
+  build-macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            premake-arch: --mac-intel
+          - arch: arm64
+            premake-arch: --mac-arm
+
+    runs-on: macos-latest
+
+    env:
+      SERVER_PRO3_SUPPORT: 1
+      LOG_IN_CHAT: 1
+      TARGET_FILE: libygoserver.dylib
+      BUILD_EVENT: 1
+      BUILD_SQLITE: 1
+      SERVER_ZIP_SUPPORT: 1
 
     steps:
-    - name: Download build artifacts
-      uses: actions/download-artifact@v7
-      with:
-        pattern: YGOPro-Server-windows-* # the "windows" (no hyphen) artifact is ignored
-        merge-multiple: true
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: GitHub Release
-      uses: salix5/action-automatic-releases@e0545bc14e9677f38aa573f1a52563022f987356
+      - name: Install Dependencies
+        run: |
+          brew install make wget
+
+      - name: Download premake
+        id: premake
+        uses: mercury233/action-cache-download-file@v1.1.0
+        with:
+          url: https://github.com/premake/premake-core/releases/download/v5.0.0-beta5/premake-5.0.0-beta5-macosx.tar.gz
+          filename: premake5.tar.gz
+
+      - name: Extract premake
+        run: |
+          tar xf ${{ steps.premake.outputs.filepath }}
+          chmod +x ./premake5
+
+      - name: Download lua
+        id: lua
+        uses: mercury233/action-cache-download-file@v1.1.0
+        with:
+          url: https://www.lua.org/ftp/lua-5.4.7.tar.gz
+
+      - name: Extract lua
+        run: |
+          tar xf ${{ steps.lua.outputs.filepath }}
+          mv lua-5.4.7 lua
+
+      - name: Download sqlite
+        id: sqlite
+        uses: mercury233/action-cache-download-file@v1.1.0
+        with:
+          url: https://www.sqlite.org/2025/sqlite-amalgamation-3490100.zip
+
+      - name: Extract sqlite
+        run: |
+          7z x ${{ steps.sqlite.outputs.filepath }}
+          mv sqlite-amalgamation-3490100 sqlite3
+
+      - name: Download libevent
+        id: libevent
+        uses: mercury233/action-cache-download-file@v1.1.0
+        with:
+          url: https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
+          filename: libevent.tar.gz
+
+      - name: Extract libevent
+        run: |
+          tar xf ${{ steps.libevent.outputs.filepath }}
+          mv libevent-2.1.12-stable event
+
+      - name: Configure libevent
+        run: |
+          ./.ci/configure-libevent.sh
+
+      - name: Prepare files
+        run: |
+          .ci/prepare-irrlicht.sh
+          cp -r premake/* .
+          cp -r resource/* .
+
+      - name: Generate Makefiles
+        env:
+          SERVER_PRO3_SUPPORT: 1
+          LOG_IN_CHAT: 1
+          TARGET_FILE: libygoserver.dylib
+          BUILD_EVENT: 1
+          BUILD_SQLITE: 1
+          SERVER_ZIP_SUPPORT: 1
+        run: |
+          ./premake5 gmake --server-ygopro3-support ${{ matrix.premake-arch }}
+
+      - name: Build
+        run: |
+          cd build
+          make config=release -j$(sysctl -n hw.ncpu)
+          cd ..
+
+      - name: Move output
+        run: |
+          mkdir -p dist/${{ matrix.arch }}
+          mv bin/release/libygoserver.dylib dist/${{ matrix.arch }}/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: dist/${{ matrix.arch }}
+
+  combine-macos:
+    runs-on: macos-latest
+    needs: build-macos
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-x64
+          path: x64
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-arm64
+          path: arm64
+
+      - name: Combine universal dylib
+        run: |
+          mkdir dist
+          lipo -create \
+            -output dist/libygoserver.dylib \
+            x64/libygoserver.dylib \
+            arm64/libygoserver.dylib
+
+      - name: Upload final artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-universal
+          path: dist/libygoserver.dylib
+
+  build-android:
+    runs-on: ubuntu-22.04
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            platform: android_arm64
+            output_dir: android_arm64
+          - abi: armeabi-v7a
+            platform: android_armeabi_v7a
+            output_dir: android_armeabi_v7a
+          - abi: x86
+            platform: android_x86
+            output_dir: android_x86
+          - abi: x86_64
+            platform: android_x86_64
+            output_dir: android_x86_64
+
+    env:
+      SERVER_PRO3_SUPPORT: 1
+      LOG_IN_CHAT: 1
+      TARGET_FILE: libygoserver.so
+      BUILD_EVENT: 1
+      BUILD_IRRLICHT: 1
+      BUILD_SQLITE: 1
+      SERVER_ZIP_SUPPORT: 1
+      NDK_DIR: android-ndk-r23b
+      ANDROID_API_LEVEL: 26
+      ANDROID_ABI: ${{ matrix.abi }}
+
+    steps:
+    - name: Checkout repository with submodules
+      uses: actions/checkout@v6
       with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "server-latest"
-        prerelease: true
-        title: "Development Build (Server Mode)"
-        files: |
-          x64/ygopro.exe
-          x64/AI.Server.exe
+        fetch-depth: 1
+        submodules: true
+
+    - name: Update submodules
+      run: |
+        cd ocgcore
+        git checkout master
+        git pull origin master
+        cd ..
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y unzip
+
+    - name: Download premake
+      id: premake
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://github.com/premake/premake-core/releases/download/v5.0.0-beta4/premake-5.0.0-beta4-linux.tar.gz
+        filename: premake5.tar.gz
+
+    - name: Extract premake
+      run: |
+        tar xf ${{ steps.premake.outputs.filepath }}
+        chmod +x ./premake5
+
+    - name: Download Android NDK
+      id: ndk
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://dl.google.com/android/repository/android-ndk-r23b-linux.zip
+        filename: android-ndk-r23b-linux.zip
+
+    - name: Extract Android NDK
+      run: |
+        unzip -q ${{ steps.ndk.outputs.filepath }}
+
+    - name: Download libevent
+      id: libevent
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
+        filename: libevent.tar.gz
+
+    - name: Extract libevent
+      run: |
+        tar xf ${{ steps.libevent.outputs.filepath }}
+        mv libevent-2.1.12-stable event
+
+    - name: Configure libevent
+      run: |
+        ./.ci/configure-libevent.sh
+
+    - name: Download lua
+      id: lua
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://www.lua.org/ftp/lua-5.4.7.tar.gz
+
+    - name: Extract lua
+      run: |
+        tar xf ${{ steps.lua.outputs.filepath }}
+        mv lua-5.4.7 lua
+
+    - name: Download sqlite
+      id: sqlite
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://www.sqlite.org/2025/sqlite-amalgamation-3490100.zip
+
+    - name: Extract sqlite
+      run: |
+        7z x ${{ steps.sqlite.outputs.filepath }}
+        mv sqlite-amalgamation-3490100 sqlite3
+
+    - name: Prepare files
+      run: |
+        .ci/prepare-irrlicht.sh
+        cp -r premake/* .
+        cp -r resource/* .
+
+    - name: Use premake to generate Android make files
+      run: |
+        ./premake5 gmake \
+          --server-ygopro3-support \
+          --log-in-chat \
+          --build-sqlite \
+          --build-event \
+          --android-abi=${ANDROID_ABI} \
+          --ndk-dir=${NDK_DIR} \
+          --android-api-level=${ANDROID_API_LEVEL}
+
+    - name: Make
+      run: |
+        cd build
+        make config=release_${{ matrix.platform }} -j$(nproc)
+        cd ..
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v6
+      with:
+        name: ${{ matrix.abi }}
+        path: |
+          bin/${{ matrix.output_dir }}/release/libygoserver.so
+
+  publish:
+    needs: [build, build-linux, build-android, combine-macos]
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: build
+
+      - name: Delete old Release
+        run: |
+          TAG_NAME=release-latest
+          gh release delete "$TAG_NAME" --yes || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete old tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git fetch --tags
+          git tag -d release-latest || true
+          git push origin :refs/tags/release-latest || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create tag
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git tag release-latest
+          git push origin release-latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare
+        run: |
+          cd build
+          zip -r x86.zip x86/
+          zip -r x86_64.zip x86_64/
+          zip -r armeabi-v7a.zip armeabi-v7a/
+          zip -r arm64-v8a.zip arm64-v8a/
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: release-latest
+          release_name: release-latest
+          draft: false
+          prerelease: false
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/ygoserver.dll/ygoserver.dll
+          asset_name: ygoserver.dll
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/ygopro.exe/ygopro.exe
+          asset_name: ygopro.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/AI.Server.exe/AI.Server.exe
+          asset_name: AI.Server.exe
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/macos-universal/libygoserver.dylib
+          asset_name: libygoserver.dylib
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/YGOPro-Server-ubuntu-pro3-so/libygoserver.so
+          asset_name: libygoserver.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/arm64-v8a.zip
+          asset_name: arm64-v8a.zip
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/armeabi-v7a.zip
+          asset_name: armeabi-v7a.zip
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/x86_64.zip
+          asset_name: x86_64.zip
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/x86.zip
+          asset_name: x86.zip
+          asset_content_type: application/octet-stream

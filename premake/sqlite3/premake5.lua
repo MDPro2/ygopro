@@ -3,7 +3,7 @@ project "sqlite3"
 
     files { "sqlite3.c", "sqlite3.h" }
 
-if not SERVER_PRO3_SUPPORT then
+if not (SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT) then
     defines {
         "SQLITE_DQS=0",
         "SQLITE_DEFAULT_MEMSTATUS=0",
@@ -16,7 +16,7 @@ if not SERVER_PRO3_SUPPORT then
     }
 end
 
-if SERVER_PRO3_SUPPORT then
+if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT then
     filter "system:windows"
         defines { "SQLITE_API=__declspec(dllexport)" }
 end

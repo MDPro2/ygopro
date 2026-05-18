@@ -35,6 +35,7 @@ SERVER_ZIP_SUPPORT = false
 SERVER_PRO2_SUPPORT = false
 SERVER_TAG_SURRENDER_CONFIRM = false
 SERVER_PRO3_SUPPORT = false
+SERVER_YGOPRO3_SUPPORT = false
 USE_IRRKLANG = false
 
 -- Read settings from command line or environment variables
@@ -103,6 +104,7 @@ newoption { trigger = 'build-ikpmp3', category = "YGOPro - irrklang - ikpmp3", d
 newoption { trigger = "mac-arm", category = "YGOPro", description = "Compile for Apple Silicon Mac" }
 newoption { trigger = "mac-intel", category = "YGOPro", description = "Compile for Intel Mac" }
 newoption { trigger = "ocgcore-dynamic", category = "YGOPro - ocgcore", description = "Build ocgcore as dynamic library" }
+newoption { trigger = "android-abi", category = "YGOPro - android", description = "", value = "ABI", default = "arm64-v8a" }
 newoption { trigger = "ndk-dir", category = "YGOPro - android", description = "", value = "PATH" }
 newoption { trigger = "android-api-level", category = "YGOPro - android", description = "", value = "LEVEL", default = "26" }
 
@@ -110,6 +112,7 @@ newoption { trigger = "server-mode", category = "YGOPro - server", description =
 newoption { trigger = "server-zip-support", category = "YGOPro - server", description = "" }
 newoption { trigger = "server-pro2-support", category = "YGOPro - server", description = "" }
 newoption { trigger = "server-pro3-support", category = "YGOPro - server", description = "" }
+newoption { trigger = "server-ygopro3-support", category = "YGOPro - server", description = "" }
 newoption { trigger = "server-tag-surrender-confirm", category = "YGOPro - server", description = "" }
 
 boolOptions = {
@@ -185,10 +188,45 @@ end
 
 ANDROID_ENABLED = false
 ANDROID_NDK_DIR = GetParam("ndk-dir")
+ANDROID_ABI = GetParam("android-abi") or "arm64-v8a"
 ANDROID_API_LEVEL_TEXT = GetParam("android-api-level") or "26"
 ANDROID_API_LEVEL = tonumber(ANDROID_API_LEVEL_TEXT)
 if not ANDROID_API_LEVEL then
     error("Invalid android api level: " .. ANDROID_API_LEVEL_TEXT)
+end
+ANDROID_ABIS = {
+    ["armeabi-v7a"] = {
+        platform = "android_armeabi_v7a",
+        target = "armv7a-linux-androideabi",
+        host = "arm-linux-androideabi",
+        architecture = "ARM",
+        output = "android_armeabi_v7a"
+    },
+    ["arm64-v8a"] = {
+        platform = "android_arm64",
+        target = "aarch64-linux-android",
+        host = "aarch64-linux-android",
+        architecture = "ARM64",
+        output = "android_arm64"
+    },
+    ["x86"] = {
+        platform = "android_x86",
+        target = "i686-linux-android",
+        host = "i686-linux-android",
+        architecture = "x86",
+        output = "android_x86"
+    },
+    ["x86_64"] = {
+        platform = "android_x86_64",
+        target = "x86_64-linux-android",
+        host = "x86_64-linux-android",
+        architecture = "x86_64",
+        output = "android_x86_64"
+    },
+}
+ANDROID_ABI_CONFIG = ANDROID_ABIS[ANDROID_ABI]
+if not ANDROID_ABI_CONFIG then
+    error("Invalid android abi: " .. ANDROID_ABI)
 end
 if ANDROID_NDK_DIR then
     ANDROID_NDK_DIR = path.getabsolute(ANDROID_NDK_DIR)
@@ -197,7 +235,7 @@ if ANDROID_NDK_DIR then
     end
     ANDROID_ENABLED = true
     ANDROID_TOOLCHAIN_BIN = FindAndroidToolchainBin(ANDROID_NDK_DIR)
-    ANDROID_TARGET = "aarch64-linux-android" .. ANDROID_API_LEVEL
+    ANDROID_TARGET = ANDROID_ABI_CONFIG.target .. ANDROID_API_LEVEL
     premake.override(premake.tools.clang, "gettoolname", function(base, cfg, tool)
         if cfg.system == premake.ANDROID then
             if tool == "cc" then
@@ -225,6 +263,11 @@ if GetParam("server-pro2-support") then
 end
 if GetParam("server-pro3-support") then
     SERVER_PRO3_SUPPORT = true
+    SERVER_ZIP_SUPPORT = true
+    SERVER_TAG_SURRENDER_CONFIRM = true
+end
+if GetParam("server-ygopro3-support") then
+    SERVER_YGOPRO3_SUPPORT = true
     SERVER_ZIP_SUPPORT = true
     SERVER_TAG_SURRENDER_CONFIRM = true
 end
@@ -486,7 +529,7 @@ workspace "YGOPro"
 
     configurations { "Release", "Debug" }
     if ANDROID_ENABLED then
-        platforms { "android_arm64" }
+        platforms { ANDROID_ABI_CONFIG.platform }
     end
 
     for _, numberOption in ipairs(numberOptions) do
@@ -497,7 +540,7 @@ workspace "YGOPro"
         ApplyBoolean(boolOption)
     end
 
-    if SERVER_PRO3_SUPPORT then
+    if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT then
         defines { "LUA_USE_LONGJMP" }
     end
 
@@ -513,8 +556,8 @@ workspace "YGOPro"
     filter { "system:windows", "platforms:x64" }
         architecture "x86_64"
 
-    filter "platforms:android_arm64"
-        architecture "ARM64"
+    filter { "platforms:" .. ANDROID_ABI_CONFIG.platform }
+        architecture(ANDROID_ABI_CONFIG.architecture)
         system "android"
         toolset "clang"
         pic "On"
@@ -538,16 +581,16 @@ workspace "YGOPro"
         optimize "Speed"
         targetdir "bin/release"
 
-    filter { "platforms:android_arm64", "configurations:Release" }
-        targetdir "bin/android_arm64/release"
+    filter { "platforms:" .. ANDROID_ABI_CONFIG.platform, "configurations:Release" }
+        targetdir(path.join("bin", ANDROID_ABI_CONFIG.output, "release"))
 
     filter "configurations:Debug"
         symbols "On"
         defines "_DEBUG"
         targetdir "bin/debug"
 
-    filter { "platforms:android_arm64", "configurations:Debug" }
-        targetdir "bin/android_arm64/debug"
+    filter { "platforms:" .. ANDROID_ABI_CONFIG.platform, "configurations:Debug" }
+        targetdir(path.join("bin", ANDROID_ABI_CONFIG.output, "debug"))
 
     filter { "system:windows", "platforms:Win32", "configurations:Release" }
         targetdir "bin/release/x86"
@@ -562,7 +605,7 @@ workspace "YGOPro"
         targetdir "bin/debug/x64"
 
     filter { "configurations:Release", "action:vs*" }
-        linktimeoptimization "On"
+        flags { "LinkTimeOptimization" }
         staticruntime "On"
         disablewarnings { "4244", "4267", "4838", "4996", "6011", "6031", "6054", "6262" }
 
@@ -598,7 +641,7 @@ workspace "YGOPro"
     filter { "system:android", "language:C++" }
         linkoptions { "-static-libstdc++" }
 
-if SERVER_PRO3_SUPPORT then
+if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT then
     filter "not action:vs*"
         pic "On"
 end
