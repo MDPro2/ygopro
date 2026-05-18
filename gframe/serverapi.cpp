@@ -11,7 +11,7 @@
 namespace ygo {
 	YGOSERVER_API int start_server(const char* args) {
 		int argc = 1;
-		char** argv = new char* [13];
+		char** argv = new char* [16];
 		const char* server_name = "ygoserver";
 		argv[0] = new char[strlen(server_name) + 1];
 		strcpy(argv[0], server_name);

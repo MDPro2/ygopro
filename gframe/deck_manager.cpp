@@ -155,13 +155,18 @@ void DeckManager::LoadLFList() {
 	LoadLFListSingle("config/lflist.conf");
 #elif defined(SERVER_PRO3_SUPPORT)
 	LoadLFListSingle("Data/lflist_merged.conf");
-#endif
+#elif defined(SERVER_YGOPRO3_SUPPORT)
+	std::wstring temp = ygo::mainGame->base_path + L"lflist.conf";
+	const wchar_t* lflist = temp.c_str();
+	LoadLFListSingle(lflist);
+#else
 	LoadLFListSingle("specials/lflist.conf");
 	LoadLFListSingle("lflist.conf");
-	LFList nolimit;
-	nolimit.listName = L"N/A";
-	nolimit.hash = 0;
-	_lfList.push_back(nolimit);
+#endif
+LFList nolimit;
+nolimit.listName = L"N/A";
+nolimit.hash = 0;
+_lfList.push_back(nolimit);
 }
 #ifndef YGOPRO_SERVER_MODE
 const wchar_t* DeckManager::GetLFListName(unsigned int lfhash) {

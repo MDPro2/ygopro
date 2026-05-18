@@ -196,6 +196,11 @@ class Game {
 
 public:
 	bool Initialize();
+#ifdef SERVER_YGOPRO3_SUPPORT
+	std::wstring base_path;
+	std::wstring i18n;
+	std::vector<std::string> packs;
+#endif
 #ifdef YGOPRO_SERVER_MODE
 	void MainServerLoop();
 	void MainTestLoop(int code);

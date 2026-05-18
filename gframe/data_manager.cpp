@@ -688,6 +688,39 @@ unsigned char* DataManager::ReadScriptFromIrrFS(const char* script_name, int* sl
 }
 #endif
 unsigned char* DataManager::ReadScriptFromFile(const char* script_name, int* slen) {
+	// If mainGame provides a base path, try that first for relative script names
+#ifdef SERVER_YGOPRO3_SUPPORT
+	const std::wstring& bp = ygo::mainGame->base_path;
+	if (!bp.empty() && script_name && script_name[0]) {
+		bool absolute = false;
+#if defined(_WIN32)
+		if ((std::strlen(script_name) > 1 && script_name[1] == ':') || script_name[0] == '\\' || script_name[0] == '/')
+			absolute = true;
+#else
+		if (script_name[0] == '/')
+			absolute = true;
+#endif
+		if (!absolute) {
+			char bp_utf[1024]{};
+			BufferIO::EncodeUTF8(bp.c_str(), bp_utf);
+			char fullpath[2048]{};
+			size_t blen = std::strlen(bp_utf);
+			if (blen && (bp_utf[blen - 1] == '/' || bp_utf[blen - 1] == '\\'))
+				mysnprintf(fullpath, "%s%s", bp_utf, script_name);
+			else
+				mysnprintf(fullpath, "%s/%s", bp_utf, script_name);
+			FILE* fp = myfopen(fullpath, "rb");
+			if (fp) {
+				size_t len = std::fread(scriptBuffer, 1, sizeof scriptBuffer, fp);
+				std::fclose(fp);
+				if (len >= sizeof scriptBuffer)
+					return nullptr;
+				*slen = (int)len;
+				return scriptBuffer;
+			}
+		}
+	}
+#endif
 	FILE* fp = myfopen(script_name, "rb");
 	if (!fp)
 		return nullptr;

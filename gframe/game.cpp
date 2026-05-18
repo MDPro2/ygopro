@@ -28,7 +28,10 @@ namespace irr {
 #endif //YGOPRO_SERVER_MODE
 #include <thread>
 #include "myfilesystem.h"
+#include <codecvt>
+#include <string>
 
+#include <iostream>
 namespace ygo {
 
 Game* mainGame;
@@ -93,9 +96,16 @@ void Game::MainServerLoop() {
 #ifdef SERVER_ZIP_SUPPORT
 	dataManager.FileSystem = new irr::io::CFileSystem();
 #endif
+#ifdef SERVER_YGOPRO3_SUPPORT
+	std::wstring temp = ygo::mainGame->base_path + L"cdb/cards-" + ygo::mainGame->i18n + L".cdb";
+	const wchar_t* db = temp.c_str();
+	std::wcout << db << std::endl;
+	dataManager.LoadDB(db);
+#else
 	initUtils();
-	deckManager.LoadLFList();
 	dataManager.LoadDB("cards.cdb");
+#endif
+	deckManager.LoadLFList();
 	LoadExpansionsAll();
 #ifdef SERVER_PRO2_SUPPORT
 	dataManager.FileSystem->addFileArchive("data/script.zip", true, false, irr::io::EFAT_ZIP);
@@ -1420,6 +1430,16 @@ void Game::LoadExpansions(const char* expansions_path) {
 #endif
 #if defined(SERVER_ZIP_SUPPORT) || !defined(YGOPRO_SERVER_MODE)
 			if (IsExtension(name, ".zip") || IsExtension(name, ".ypk")) {
+				#ifdef SERVER_YGOPRO3_SUPPORT
+					std::vector<std::string> packs = ygo::mainGame->packs;
+					std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+					std::wstring wstring_name = converter.from_bytes(name);
+					std::wcout << wstring_name << std::endl;
+					std::string s = name;
+					if (std::find(packs.begin(), packs.end(), s) == packs.end())
+						return;
+					std::wcout << wstring_name << std::endl;
+				#endif
 				mountAndProcess(fpath);
 				return;
 			}

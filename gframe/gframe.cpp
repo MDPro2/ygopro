@@ -4,6 +4,9 @@
 #include <event2/thread.h>
 #include <clocale>
 #include <memory>
+#include <locale>
+#include <codecvt>
+#include <string>
 
 #ifdef __APPLE__
 #import <CoreFoundation/CoreFoundation.h>
@@ -83,6 +86,27 @@ int main(int argc, char* argv[]) {
 	evthread_use_pthreads();
 #endif //_WIN32
 	ygo::Game _game;
+#ifdef SERVER_YGOPRO3_SUPPORT
+	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
+	if (argc > 13) {
+		_game.base_path = converter.from_bytes(argv[13]);
+	} else _game.base_path = L"./";
+	if (argc > 14) {
+		_game.i18n = converter.from_bytes(argv[14]);
+	} else _game.i18n = L"zh-CN";
+	if (argc > 15) {
+		std::string s(argv[15]);
+		size_t start = 0;
+		size_t pos;
+
+		while ((pos = s.find("/", start)) != std::string::npos) {
+			_game.packs.push_back(s.substr(start, pos - start));
+			start = pos + 1;
+		}
+
+		_game.packs.push_back(s.substr(start));
+	}
+#endif
 #ifdef YGOPRO_SERVER_MODE
 	enable_log = 1;
 
@@ -130,12 +154,18 @@ int main(int argc, char* argv[]) {
 	};
 
 	load_env_list("YGOPRO_EXPANSIONS", expansions_list);
+#ifdef SERVER_YGOPRO3_SUPPORT
+	std::wstring expansion = _game.base_path + L"expansions";
+	expansions_list.push_back(expansion);
+#else
+	load_env_list("YGOPRO_EXPANSIONS", expansions_list);
 	if (expansions_list.empty()) {
 		expansions_list.push_back(L"./expansions");
-#if defined(SERVER_PRO3_SUPPORT) && !defined(_WIN32) && !defined(__APPLE__)
-		expansions_list.push_back(L"./Expansions");
-#endif
+		#if defined(SERVER_PRO3_SUPPORT) && !defined(_WIN32) && !defined(__APPLE__)
+			expansions_list.push_back(L"./Expansions");
+		#endif
 	}
+#endif
 	load_env_list("YGOPRO_EXTRA_SCRIPT", extra_script_list);
 
 	ygo::server_port = 7911;
@@ -195,28 +225,28 @@ int main(int argc, char* argv[]) {
 		ygo::game_info.draw_count = atoi(argv[10]);
 		ygo::game_info.time_limit = atoi(argv[11]);
 		ygo::replay_mode = atoi(argv[12]);
-		for (int i = 13; (i < argc && i < (13 + MAX_MATCH_COUNT)) ; ++i)
+		for (int i = 16; (i < argc && i < (16 + MAX_MATCH_COUNT)) ; ++i)
 		{
 			auto ok = Base64::Decode(
 				reinterpret_cast<const unsigned char*>(argv[i]),
 				strlen(argv[i]),
-				reinterpret_cast<unsigned char*>(ygo::pre_seed[i - 13]),
+				reinterpret_cast<unsigned char*>(ygo::pre_seed[i - 16]),
 				SEED_COUNT * sizeof(uint32_t)
 			);
 			if(ok) {
 				// check if it isn't all zero
 				bool all_zero = true;
 				for (int j = 0; j < SEED_COUNT; ++j) {
-					if (ygo::pre_seed[i - 13][j] != 0) {
+					if (ygo::pre_seed[i - 16][j] != 0) {
 						all_zero = false;
 						break;
 					}
 				}
 				if (!all_zero)
-					ygo::pre_seed_specified[i - 13] = 1;
+					ygo::pre_seed_specified[i - 16] = 1;
 			}
 			else
-				std::fprintf(stderr, "Failed to decode seed %d: %s\n", i - 13, argv[i]);
+				std::fprintf(stderr, "Failed to decode seed %d: %s\n", i - 16, argv[i]);
 		}
 	}
 	ygo::mainGame = &_game;
