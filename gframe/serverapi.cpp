@@ -10,37 +10,47 @@
 
 namespace ygo {
 	YGOSERVER_API int start_server(const char* args) {
-		int argc = 1;
-		char** argv = new char* [16];
+		std::vector<char*> argv_vec;
+
 		const char* server_name = "ygoserver";
-		argv[0] = new char[strlen(server_name) + 1];
-		strcpy(argv[0], server_name);
-		size_t argLength = strlen(args);
-		for (size_t i = 1, j = 0; j < argLength; ) {
-			while (args[j] == ' ' && j < argLength) { ++j; }
-			if (j < argLength) {
-				size_t tokenLength = 0;
-				while (args[j + tokenLength] != ' ' && args[j + tokenLength] != '\0') { ++tokenLength; }
+		char* arg0 = new char[strlen(server_name) + 1];
+		strcpy(arg0, server_name);
+		argv_vec.push_back(arg0);
 
-				char* currentToken = new char[tokenLength + 1];
-				strncpy(currentToken, args + j, tokenLength);
-				currentToken[tokenLength] = '\0';
+		if (args != nullptr) {
+			const char* p = args;
+			while (*p != '\0') {
+				while (*p == ' ') p++;
+				if (*p == '\0') break;
 
-				argv[i] = currentToken;
-				i++;
-				j += tokenLength;
-				argc++;
+				std::string token;
+				bool in_quotes = false;
+
+				while (*p != '\0') {
+					if (*p == '"') {
+						in_quotes = !in_quotes;
+					} 
+					else if (*p == ' ' && !in_quotes) {
+						break;
+					} 
+					else {
+						token += *p;
+					}
+					p++;
+				}
+
+				char* currentToken = new char[token.length() + 1];
+				strcpy(currentToken, token.c_str());
+				argv_vec.push_back(currentToken);
 			}
 		}
 
-		int result = main(argc, argv);
-		for (int i = 1; i < argc; ++i) {
-			if (argv[i]) {
-				delete[] argv[i];
-				argv[i] = nullptr;
-			}
+		int argc = static_cast<int>(argv_vec.size());
+		int result = main(argc, argv_vec.data());
+
+		for (char* arg : argv_vec) {
+			delete[] arg;
 		}
-		delete[] argv;
 
 		return result;
 	}
