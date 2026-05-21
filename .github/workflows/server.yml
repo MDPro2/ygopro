@@ -12,49 +12,23 @@ jobs:
       fail-fast: false
       matrix:
         name:
-          # - windows
-          - windows-x64
-          - windows-ygopro2-server
-          # - windows-mdpro2-server
-          # - windows-mdpro3-server
-#          - windows-2025
+          - windows-ygopro3-server
+          - windows-arm64-ygopro3-server
         include:
-          # - name: windows
-          #   os: windows-2022
-          #   vs: vs2022
-          #   solution: ygopro.exe
-          - name: windows-x64
-            os: windows-2022
-            vs: vs2022
-            solution: ygopro.exe
-            x64: true
-#          - name: windows-2025
-#            os: windows-2025
-#            vs: vs2025 # to be enabled after the release of Visual Studio 2025
-          - name: windows-ygopro2-server
-            os: windows-2022
-            vs: vs2022
-            x64: true
-            solution: AI.Server.exe
-            ygopro2: true
-          # - name: windows-mdpro2-server
-          #   os: windows-2022
-          #   vs: vs2022
-          #   x64: true
-          #   solution: ygoserver.dll
-          #   mdpro2: true
-          # - name: windows-mdpro3-server
-          #   os: windows-2022
-          #   vs: vs2022
-          #   x64: true
-          #   solution: ygoserver.dll
-          #   mdpro3: true
           - name: windows-ygopro3-server
             os: windows-2022
             vs: vs2022
-            x64: true
-            solution: ygoserver.dll
-            mdpro2: true
+            platform: x64
+            artifact: ygoserver.dll
+            output: ygoserver.dll
+            ygopro3: true
+          - name: windows-arm64-ygopro3-server
+            os: windows-2022
+            vs: vs2022
+            platform: ARM64
+            artifact: ygoserver-arm64.dll
+            output: ygoserver.dll
+            ygopro3: true
 
     runs-on: ${{ matrix.os }}
     permissions:
@@ -146,7 +120,6 @@ jobs:
         move sqlite-amalgamation-3490100 sqlite3
 
     - name: Download irrlicht
-      if: matrix.ygopro2 == true || matrix.mdpro2 == true || matrix.mdpro3 == true || matrix.ygopro3 == true
       run: |
         git clone --depth=1 https://github.com/mercury233/irrlicht
 
@@ -156,63 +129,40 @@ jobs:
         xcopy /E resource\* .
 
     - name: Use premake to generate Visual Studio solution
-      if: matrix.ygopro3 == true
       run: |
-        .\premake5.exe --server-ygopro3-support --log-in-chat
-
-    - name: Use premake to generate Visual Studio solution
-      if: matrix.ygopro3 != true
-      run: |
-        .\premake5.exe ${{ matrix.vs }} ${{ matrix.ygopro2 && '--server-pro2-support' || '' }} ${{ matrix.mdpro3 && '--server-pro3-support --log-in-chat' || '' }} ${{ matrix.mdpro2 && '--server-pro3-support --log-in-chat --server-pro2-support' || '' }}
+        .\premake5.exe ${{ matrix.vs }} --server-ygopro3-support --log-in-chat
 
     - name: Add msbuild to PATH
       uses: microsoft/setup-msbuild@v3
 
     - name: Build solution
       run: |
-        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.x64 && 'x64' || 'Win32' }} /p:OutDir=../bin/release/${{ matrix.name }}/
+        MSBuild.exe build\YGOPro.sln /m /p:Configuration=Release /p:Platform=${{ matrix.platform }} /p:OutDir=../bin/release/${{ matrix.name }}/
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v6
       with:
-        name: ${{ matrix.solution }}
+        name: ${{ matrix.artifact }}
         retention-days: 1
         path: |
-          bin/release/${{ matrix.name }}/${{ matrix.solution }}
+          bin/release/${{ matrix.name }}/${{ matrix.output }}
 
   build-linux:
     strategy:
       fail-fast: false
       matrix:
         name:
-          - ubuntu-22
-          - ubuntu-24
-          - ubuntu-static-link
-          - ubuntu-zip-support
           - ubuntu-pro3-so
+          - ubuntu-arm64-pro3-so
         include:
-          - name: ubuntu-22
-            os: ubuntu-22.04
-            premake-version: 5.0.0-beta4
-          - name: ubuntu-24
-            os: ubuntu-24.04
-            premake-version: 5.0.0-beta6
-          - name: ubuntu-static-link
-            os: ubuntu-22.04
-            premake-version: 5.0.0-beta4
-            static-link: true
-          - name: ubuntu-zip-support
-            os: ubuntu-22.04
-            premake-version: 5.0.0-beta4
-            zip-support: true
           - name: ubuntu-pro3-so
             os: ubuntu-22.04
             premake-version: 5.0.0-beta4
             static-link: true
             zip-support: true
-            pro3: true
-          - name: ubuntu-pro3-so
-            os: ubuntu-22.04
+            ygopro3: true
+          - name: ubuntu-arm64-pro3-so
+            os: ubuntu-24.04-arm
             premake-version: 5.0.0-beta4
             static-link: true
             zip-support: true
@@ -355,7 +305,7 @@ jobs:
       with:
         name: YGOPro-Server-${{ matrix.name }}
         path: |
-          bin/release/${{ matrix.pro3 && 'libygoserver.so' || 'ygopro' }}
+          bin/release/libygoserver.so
 
   build-macos:
     strategy:
@@ -772,18 +722,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/ygopro.exe/ygopro.exe
-          asset_name: ygopro.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/AI.Server.exe/AI.Server.exe
-          asset_name: AI.Server.exe
+          asset_path: ./build/ygoserver-arm64.dll/ygoserver.dll
+          asset_name: ygoserver-arm64.dll
           asset_content_type: application/octet-stream
 
       - name: Upload
@@ -804,6 +744,16 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/YGOPro-Server-ubuntu-pro3-so/libygoserver.so
           asset_name: libygoserver.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/YGOPro-Server-ubuntu-arm64-pro3-so/libygoserver.so
+          asset_name: libygoserver-linux-arm64.so
           asset_content_type: application/octet-stream
 
       - name: Upload
