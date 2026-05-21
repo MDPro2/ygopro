@@ -693,7 +693,7 @@ workspace "YGOPro"
         targetdir "bin/debug/arm64"
 
     filter { "configurations:Release", "action:vs*" }
-        flags { "LinkTimeOptimization" }
+        linktimeoptimization "On"
         staticruntime "On"
         disablewarnings { "4244", "4267", "4838", "4996", "6011", "6031", "6054", "6262" }
 
