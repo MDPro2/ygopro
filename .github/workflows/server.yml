@@ -112,6 +112,17 @@ jobs:
         tar xf ${{ steps.lua.outputs.filepath }}
         move lua-5.4.7 lua
 
+    - name: Download lua
+      id: lzma
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.gz
+
+    - name: Extract lzma
+      run: |
+        tar xf ${{ steps.lzma.outputs.filepath }}
+        mv xz-5.8.3 lzma
+
     - name: Download sqlite
       id: sqlite
       uses: mercury233/action-cache-download-file@v1.1.0
@@ -267,6 +278,17 @@ jobs:
         tar xf ${{ steps.lua.outputs.filepath }}
         mv lua-5.4.7 lua
 
+    - name: Download lua
+      id: lzma
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.gz
+
+    - name: Extract lzma
+      run: |
+        tar xf ${{ steps.lzma.outputs.filepath }}
+        mv xz-5.8.3 lzma
+
     - name: Download sqlite
       if: matrix.static-link == true
       id: sqlite
@@ -363,6 +385,17 @@ jobs:
           tar xf ${{ steps.lua.outputs.filepath }}
           mv lua-5.4.7 lua
 
+      - name: Download lua
+        id: lzma
+        uses: mercury233/action-cache-download-file@v1.1.0
+        with:
+          url: https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.gz
+
+      - name: Extract lzma
+        run: |
+          tar xf ${{ steps.lzma.outputs.filepath }}
+          mv xz-5.8.3 lzma
+
       - name: Download sqlite
         id: sqlite
         uses: mercury233/action-cache-download-file@v1.1.0
@@ -388,11 +421,11 @@ jobs:
 
       - name: Configure libevent
         run: |
-          ./.ci/configure-libevent.sh
+          bash ./.ci/configure-libevent.sh
 
       - name: Prepare files
         run: |
-          .ci/prepare-irrlicht.sh
+          bash .ci/prepare-irrlicht.sh
           cp -r premake/* .
           cp -r resource/* .
 
@@ -541,7 +574,7 @@ jobs:
 
     - name: Configure libevent
       run: |
-        ./.ci/configure-libevent.sh
+        bash ./.ci/configure-libevent.sh
 
     - name: Download lua
       id: lua
@@ -553,6 +586,17 @@ jobs:
       run: |
         tar xf ${{ steps.lua.outputs.filepath }}
         mv lua-5.4.7 lua
+
+    - name: Download lua
+      id: lzma
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://github.com/tukaani-project/xz/releases/download/v5.8.3/xz-5.8.3.tar.gz
+
+    - name: Extract lzma
+      run: |
+        tar xf ${{ steps.lzma.outputs.filepath }}
+        mv xz-5.8.3 lzma
 
     - name: Download sqlite
       id: sqlite
@@ -567,7 +611,7 @@ jobs:
 
     - name: Prepare files
       run: |
-        .ci/prepare-irrlicht.sh
+        bash .ci/prepare-irrlicht.sh
         cp -r premake/* .
         cp -r resource/* .
 
