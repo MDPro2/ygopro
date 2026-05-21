@@ -704,7 +704,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/libygoserver-arm64-v8a.so/ libygoserver-arm64-v8a.so
+          asset_path: ./build/libygoserver-arm64-v8a.so/libygoserver-arm64-v8a.so
           asset_name: libygoserver-arm64-v8a.so
           asset_content_type: application/octet-stream
 
