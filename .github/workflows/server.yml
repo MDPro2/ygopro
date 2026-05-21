@@ -201,10 +201,49 @@ jobs:
         url: https://github.com/premake/premake-core/releases/download/v${{ matrix.premake-version }}/premake-${{ matrix.premake-version }}-linux.tar.gz
         filename: premake5.tar.gz
 
-    - name: Extract premake
+    - name: Extract & test premake
+      id: extract-premake
       run: |
         tar xf ${{ steps.premake.outputs.filepath }}
         chmod +x ./premake5
+        mkdir premake-test
+        cp ./premake5 ./premake-test
+        cd ./premake-test
+        set +e
+        if ./premake5 --version; then
+          echo "premake=ok" >> $GITHUB_OUTPUT
+        else
+          echo "premake=fail" >> $GITHUB_OUTPUT
+        fi
+        set -e
+        cd ..
+
+    - name: Fetch premake source (fallback)
+      if: steps.extract-premake.outputs.premake != 'ok'
+      uses: actions/checkout@v6
+      with:
+        repository: premake/premake-core
+        path: premake-source
+        ref: 2ca338a25ed5f6e62d36c9cd70e5f313953c630d
+
+    - name: Build premake (fallback)
+      if: steps.extract-premake.outputs.premake != 'ok'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y uuid-dev
+        cd premake-source
+        chmod +x ./Bootstrap.sh
+        ./Bootstrap.sh
+        cp bin/release/premake5 ../premake5
+        cd ..
+
+    - name: Upload built premake
+      if: steps.extract-premake.outputs.premake != 'ok'
+      uses: actions/upload-artifact@v6
+      with:
+        name: premake5-${{ matrix.name }}
+        retention-days: 1
+        path: premake5
 
     - name: Download libevent
       if: matrix.static-link == true
