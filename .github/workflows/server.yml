@@ -587,17 +587,18 @@ jobs:
         cd build
         make config=release_${{ matrix.platform }} -j$(nproc)
         cd ..
+        mkdir so
+        mv bin/${{ matrix.output_dir }}/release/libygoserver.so so/libygoserver-${{ matrix.abi }}.so
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v6
       with:
-        name: ${{ matrix.abi }}
+        name: libygoserver-${{ matrix.abi }}.so
         path: |
-          bin/${{ matrix.output_dir }}/release/libygoserver.so
+          so/libygoserver-${{ matrix.abi }}.so
 
-  publish:
+  create-release:
     needs: [build, build-linux, build-android, combine-macos]
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -609,137 +610,20 @@ jobs:
         with:
           path: build
 
-      - name: Delete old Release
+      - name: Ensure release exists
         run: |
-          TAG_NAME=release-latest
-          gh release delete "$TAG_NAME" --yes || true
+          gh release view release-latest || \
+          gh release create release-latest --title "release-latest" --notes "Auto build"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Delete old tag
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git fetch --tags
-          git tag -d release-latest || true
-          git push origin :refs/tags/release-latest || true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create tag
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          git tag release-latest
-          git push origin release-latest
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Prepare
+      - name: Upload assets
         run: |
           cd build
-          zip -r x86.zip x86/
-          zip -r x86_64.zip x86_64/
-          zip -r armeabi-v7a.zip armeabi-v7a/
-          zip -r arm64-v8a.zip arm64-v8a/
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+          rm -r macos-x64
+          rm -r macos-arm64
+          gh release upload release-latest $(find . -type f) --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: release-latest
-          release_name: release-latest
-          draft: false
-          prerelease: false
 
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/ygoserver.dll/ygoserver.dll
-          asset_name: ygoserver.dll
-          asset_content_type: application/octet-stream
 
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/ygopro.exe/ygopro.exe
-          asset_name: ygopro.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/AI.Server.exe/AI.Server.exe
-          asset_name: AI.Server.exe
-          asset_content_type: application/octet-stream
-
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/macos-universal/libygoserver.dylib
-          asset_name: libygoserver.dylib
-          asset_content_type: application/octet-stream
-
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/YGOPro-Server-ubuntu-pro3-so/libygoserver.so
-          asset_name: libygoserver.so
-          asset_content_type: application/octet-stream
-
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/arm64-v8a.zip
-          asset_name: arm64-v8a.zip
-          asset_content_type: application/octet-stream
-
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/armeabi-v7a.zip
-          asset_name: armeabi-v7a.zip
-          asset_content_type: application/octet-stream
-
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/x86_64.zip
-          asset_name: x86_64.zip
-          asset_content_type: application/octet-stream
-
-      - name: Upload
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/x86.zip
-          asset_name: x86.zip
-          asset_content_type: application/octet-stream
