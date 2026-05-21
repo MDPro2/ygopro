@@ -112,7 +112,18 @@ jobs:
         tar xf ${{ steps.lua.outputs.filepath }}
         move lua-5.4.7 lua
 
-    - name: Download lua
+    - name: Download zlib
+      id: zlib
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz
+
+    - name: Extract zlib
+      run: |
+        tar xf ${{ steps.zlib.outputs.filepath }}
+        mv zlib-1.3.2 zlib
+
+    - name: Download lzma
       id: lzma
       uses: mercury233/action-cache-download-file@v1.1.0
       with:
@@ -278,7 +289,18 @@ jobs:
         tar xf ${{ steps.lua.outputs.filepath }}
         mv lua-5.4.7 lua
 
-    - name: Download lua
+    - name: Download zlib
+      id: zlib
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz
+
+    - name: Extract zlib
+      run: |
+        tar xf ${{ steps.zlib.outputs.filepath }}
+        mv zlib-1.3.2 zlib
+
+    - name: Download lzma
       id: lzma
       uses: mercury233/action-cache-download-file@v1.1.0
       with:
@@ -385,7 +407,18 @@ jobs:
           tar xf ${{ steps.lua.outputs.filepath }}
           mv lua-5.4.7 lua
 
-      - name: Download lua
+      - name: Download zlib
+        id: zlib
+        uses: mercury233/action-cache-download-file@v1.1.0
+        with:
+          url: https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz
+
+      - name: Extract zlib
+        run: |
+          tar xf ${{ steps.zlib.outputs.filepath }}
+          mv zlib-1.3.2 zlib
+
+      - name: Download lzma
         id: lzma
         uses: mercury233/action-cache-download-file@v1.1.0
         with:
@@ -587,7 +620,18 @@ jobs:
         tar xf ${{ steps.lua.outputs.filepath }}
         mv lua-5.4.7 lua
 
-    - name: Download lua
+    - name: Download zlib
+      id: zlib
+      uses: mercury233/action-cache-download-file@v1.1.0
+      with:
+        url: https://github.com/madler/zlib/releases/download/v1.3.2/zlib-1.3.2.tar.gz
+
+    - name: Extract zlib
+      run: |
+        tar xf ${{ steps.zlib.outputs.filepath }}
+        mv zlib-1.3.2 zlib
+
+    - name: Download lzma
       id: lzma
       uses: mercury233/action-cache-download-file@v1.1.0
       with:
