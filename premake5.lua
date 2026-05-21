@@ -237,6 +237,16 @@ function FindAndroidToolchainBin(ndkDir)
     return path.join(prebuilts[1], "bin")
 end
 
+function GetAndroidToolName(tool)
+    if tool == "cc" then
+        return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "clang")) .. " --target=" .. ANDROID_TARGET
+    elseif tool == "cxx" then
+        return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "clang++")) .. " --target=" .. ANDROID_TARGET
+    elseif tool == "ar" then
+        return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "llvm-ar"))
+    end
+end
+
 ANDROID_ENABLED = false
 ANDROID_NDK_DIR = GetParam("ndk-dir")
 ANDROID_ABI = GetParam("android-abi") or "arm64-v8a"
@@ -289,16 +299,18 @@ if ANDROID_NDK_DIR then
     ANDROID_TARGET = ANDROID_ABI_CONFIG.target .. ANDROID_API_LEVEL
     premake.override(premake.tools.clang, "gettoolname", function(base, cfg, tool)
         if cfg.system == premake.ANDROID then
-            if tool == "cc" then
-                return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "clang")) .. " --target=" .. ANDROID_TARGET
-            elseif tool == "cxx" then
-                return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "clang++")) .. " --target=" .. ANDROID_TARGET
-            elseif tool == "ar" then
-                return QuoteIfNeeded(path.join(ANDROID_TOOLCHAIN_BIN, "llvm-ar"))
-            end
+            return GetAndroidToolName(tool) or base(cfg, tool)
         end
         return base(cfg, tool)
     end)
+    if premake.tools.gcc then
+        premake.override(premake.tools.gcc, "gettoolname", function(base, cfg, tool)
+            if cfg.system == premake.ANDROID then
+                return GetAndroidToolName(tool) or base(cfg, tool)
+            end
+            return base(cfg, tool)
+        end)
+    end
 end
 
 if GetParam("server-mode") then

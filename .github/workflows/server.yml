@@ -335,6 +335,9 @@ jobs:
         cp -r resource/* .
 
     - name: Use premake to generate make files
+      env:
+        BUILD_LZMA: 1
+        BUILD_ZLIB: 1
       run: |
         ./premake5 gmake ${{ matrix.zip-support && '--server-zip-support' || '' }} \
           ${{ matrix.pro3 && '--server-pro3-support --log-in-chat' || '' }} \
@@ -367,7 +370,7 @@ jobs:
     runs-on: macos-latest
 
     env:
-      SERVER_PRO3_SUPPORT: 1
+      SERVER_YGOPRO3_SUPPORT: 1
       LOG_IN_CHAT: 1
       TARGET_FILE: libygoserver.dylib
       BUILD_EVENT: 1
@@ -464,14 +467,20 @@ jobs:
 
       - name: Generate Makefiles
         env:
-          SERVER_PRO3_SUPPORT: 1
+          SERVER_YGOPRO3_SUPPORT: 1
           LOG_IN_CHAT: 1
           TARGET_FILE: libygoserver.dylib
           BUILD_EVENT: 1
           BUILD_SQLITE: 1
+          BUILD_LZMA: 1
+          BUILD_ZLIB: 1
           SERVER_ZIP_SUPPORT: 1
         run: |
-          ./premake5 gmake --server-ygopro3-support ${{ matrix.premake-arch }}
+          ./premake5 gmake --server-ygopro3-support ${{ matrix.premake-arch }} \
+            --build-event \
+            --build-sqlite \
+            --build-lzma \
+            --build-zlib
 
       - name: Build
         run: |
@@ -540,12 +549,14 @@ jobs:
             output_dir: android_x86_64
 
     env:
-      SERVER_PRO3_SUPPORT: 1
+      SERVER_YGOPRO3_SUPPORT: 1
       LOG_IN_CHAT: 1
       TARGET_FILE: libygoserver.so
       BUILD_EVENT: 1
       BUILD_IRRLICHT: 1
       BUILD_SQLITE: 1
+      BUILD_LZMA: 1
+      BUILD_ZLIB: 1
       SERVER_ZIP_SUPPORT: 1
       NDK_DIR: android-ndk-r23b
       ANDROID_API_LEVEL: 26
@@ -666,6 +677,8 @@ jobs:
           --log-in-chat \
           --build-sqlite \
           --build-event \
+          --build-lzma \
+          --build-zlib \
           --android-abi=${ANDROID_ABI} \
           --ndk-dir=${NDK_DIR} \
           --android-api-level=${ANDROID_API_LEVEL}
