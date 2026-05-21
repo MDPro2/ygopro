@@ -1561,7 +1561,7 @@ void Game::LoadExpansions(const char* expansions_path) {
 	bool server_list_changed = false;
 
 #if defined(SERVER_ZIP_SUPPORT) || !defined(YGOPRO_SERVER_MODE)
-	auto processArchive = [&](irr::io::IFileArchive* archiveObj) {
+	auto processArchive = [&](irr::io::IFileArchive* archiveObj, const char* archiveName) {
 		auto archive = archiveObj->getFileList();
 		for(irr::u32 j = 0; j < archive->getFileCount(); ++j) {
 			const char* name = archive->getFullFileName(j).c_str();
@@ -1575,7 +1575,7 @@ void Game::LoadExpansions(const char* expansions_path) {
 				}
 				if (reader == nullptr || !dataManager.LoadDB(reader)) {
 					std::string errmsg = "Warning: Failed to load DB file in expansion archive (";
-					errmsg.append(archiveObj->getArchiveName().c_str());
+					errmsg.append(archiveName);
 					errmsg.append(" : ");
 					errmsg.append(name);
 					errmsg.append(")! ");
@@ -1621,7 +1621,7 @@ void Game::LoadExpansions(const char* expansions_path) {
 				// TODO: zip file may contain non-UTF8 file name. DecodeUTF8 can't parse it and returns 0.
 				if (!len) {
 					std::string errmsg = "Warning: Failed to decode deck file name in expansion archive (";
-					errmsg.append(archiveObj->getArchiveName().c_str());
+					errmsg.append(archiveName);
 					errmsg.append(" : ");
 					errmsg.append(name);
 					errmsg.append(")! Please make sure the file name is UTF-8 encoded in the archive.");
@@ -1639,7 +1639,7 @@ void Game::LoadExpansions(const char* expansions_path) {
 		irr::u32 countBefore = dataManager.IrrFileSystem->getFileArchiveCount();
 		dataManager.IrrFileSystem->addFileArchive(fpath, true, false, irr::io::EFAT_ZIP);
 		for(irr::u32 i = countBefore; i < dataManager.IrrFileSystem->getFileArchiveCount(); ++i)
-			processArchive(dataManager.IrrFileSystem->getFileArchive(i));
+			processArchive(dataManager.IrrFileSystem->getFileArchive(i), fpath);
 	};
 
 	if (IsExtension(expansions_path, ".zip") || IsExtension(expansions_path, ".ypk")) {
