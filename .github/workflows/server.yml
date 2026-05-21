@@ -364,10 +364,12 @@ jobs:
         include:
           - arch: x64
             premake-arch: --mac-intel
+            runner: macos-13
           - arch: arm64
             premake-arch: --mac-arm
+            runner: macos-latest
 
-    runs-on: macos-latest
+    runs-on: ${{ matrix.runner }}
 
     env:
       SERVER_YGOPRO3_SUPPORT: 1
@@ -513,6 +515,11 @@ jobs:
         with:
           name: macos-arm64
           path: arm64
+
+      - name: Check architectures
+        run: |
+          lipo -info x64/libygoserver.dylib
+          lipo -info arm64/libygoserver.dylib
 
       - name: Combine universal dylib
         run: |
