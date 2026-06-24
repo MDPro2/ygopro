@@ -344,6 +344,13 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Update submodules
+        run: |
+          cd ocgcore
+          git checkout master
+          git pull origin master
+          cd ..
+
       - name: Install Dependencies
         run: |
           brew install make wget
