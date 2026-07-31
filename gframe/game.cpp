@@ -151,7 +151,7 @@ void Game::MainServerLoop() {
 	dataManager.IrrFileSystem->addFileArchive("Data/script.zip", true, false, irr::io::EFAT_ZIP);
 #elif defined(SERVER_YGOMOBILE_SUPPORT)
 	std::wstring temp = ygo::mainGame->base_path + L"script.zip";
-	dataManager.IrrFileSystem->addFileArchive(irr::io::path(temp), true, false, irr::io::EFAT_ZIP);
+	dataManager.IrrFileSystem->addFileArchive(temp, true, false, irr::io::EFAT_ZIP);
 #endif
 
 	unsigned int listen_ip = INADDR_ANY;
