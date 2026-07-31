@@ -63,7 +63,7 @@ jobs:
     - name: Configure libevent
       shell: bash
       run: |
-        tar xf ${{ steps.libevent.outputs.filepath }}
+        tar xf ${{ steps.server-libevent.outputs.filepath }}
         mv libevent-2.1.13-stable event
 
     - name: Download lua
