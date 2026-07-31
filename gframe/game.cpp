@@ -132,12 +132,12 @@ void Game::MainServerLoop() {
 	dataManager.IrrFileSystem = new irr::io::CFileSystem();
 #endif
 #ifdef SERVER_YGOPRO3_SUPPORT
-	std::wstring temp = ygo::mainGame->base_path + L"cdb/cards-" + ygo::mainGame->i18n + L".cdb";
-	const wchar_t* db = temp.c_str();
+	std::wstring db_path_w = ygo::mainGame->base_path + L"cdb/cards-" + ygo::mainGame->i18n + L".cdb";
+	const wchar_t* db = db_path_w.c_str();
 	dataManager.LoadDB(db);
 #elif defined(SERVER_YGOMOBILE_SUPPORT)
-	std::wstring temp = ygo::mainGame->base_path + L"cards.cdb";
-	const wchar_t* db = temp.c_str();
+	std::wstring db_path_w = ygo::mainGame->base_path + L"cards.cdb";
+	const wchar_t* db = db_path_w.c_str();
 	dataManager.LoadDB(db);
 #else
 	initUtils();
@@ -150,8 +150,8 @@ void Game::MainServerLoop() {
 #elif defined(SERVER_PRO3_SUPPORT)
 	dataManager.IrrFileSystem->addFileArchive("Data/script.zip", true, false, irr::io::EFAT_ZIP);
 #elif defined(SERVER_YGOMOBILE_SUPPORT)
-	std::wstring temp = ygo::mainGame->base_path + L"script.zip";
-	dataManager.IrrFileSystem->addFileArchive(temp, true, false, irr::io::EFAT_ZIP);
+	const std::string script_archive = BufferIO::EncodeUTF8String(ygo::mainGame->base_path + L"script.zip");
+	dataManager.IrrFileSystem->addFileArchive(irr::io::path(script_archive.c_str()), true, false, irr::io::EFAT_ZIP);
 #endif
 
 	unsigned int listen_ip = INADDR_ANY;
