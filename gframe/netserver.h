@@ -13,6 +13,7 @@ private:
 	static size_t last_sent;
 	static bufferevent* disconnecting_bev;
 	static int WriteBufferEvent(bufferevent* bufev, const void* data, size_t size);
+	static constexpr uint8_t POS_REVEAL = 0x80;
 
 	static bool CanWriteToPlayer(DuelPlayer* dp) {
 		return dp && dp->bev && dp->bev != disconnecting_bev;

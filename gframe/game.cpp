@@ -34,6 +34,7 @@ namespace irr {
 #include <codecvt>
 #include <string>
 #include <locale>
+#include <algorithm>
 #ifdef _WIN32
 #include <windows.h>
 #include <timeapi.h>
