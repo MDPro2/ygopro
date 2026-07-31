@@ -826,7 +826,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/libygoserver-arm64-v8a.so/libygoserver-ygomobile-arm64-v8a.so
+          asset_path: ./build/libygoserver-ygomobile-arm64-v8a.so/libygoserver-ygomobile-arm64-v8a.so
           asset_name: libygoserver-ygomobile-arm64-v8a.so
           asset_content_type: application/octet-stream
 
@@ -836,7 +836,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/libygoserver-armeabi-v7a.so/libygoserver-ygomobile-armeabi-v7a.so
+          asset_path: ./build/libygoserver-ygomobile-armeabi-v7a.so/libygoserver-ygomobile-armeabi-v7a.so
           asset_name: libygoserver-ygomobile-armeabi-v7a.so
           asset_content_type: application/octet-stream
 
@@ -846,7 +846,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/libygoserver-x86_64.so/libygoserver-ygomobile-x86_64.so
+          asset_path: ./build/libygoserver-ygomobile-x86_64.so/libygoserver-ygomobile-x86_64.so
           asset_name: libygoserver-ygomobile-x86_64.so
           asset_content_type: application/octet-stream
 
@@ -856,7 +856,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./build/libygoserver-x86.so/libygoserver-ygomobile-x86.so
+          asset_path: ./build/libygoserver-ygomobile-x86.so/libygoserver-ygomobile-x86.so
           asset_name: libygoserver-ygomobile-x86.so
           asset_content_type: application/octet-stream
 
