@@ -272,6 +272,7 @@ newoption { trigger = "server-zip-support", category = "YGOPro - server", descri
 newoption { trigger = "server-pro2-support", category = "YGOPro - server", description = "" }
 newoption { trigger = "server-pro3-support", category = "YGOPro - server", description = "" }
 newoption { trigger = "server-ygopro3-support", category = "YGOPro - server", description = "" }
+newoption { trigger = "server-ygomobile-support", category = "YGOPro - server", description = "" }
 newoption { trigger = "server-tag-surrender-confirm", category = "YGOPro - server", description = "" }
 
 -- koishipro specific
