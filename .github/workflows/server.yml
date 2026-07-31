@@ -41,11 +41,11 @@ jobs:
         fetch-depth: 1
         submodules: false
 
-    - name: Download dependencies
-      uses: actions/download-artifact@v7
+    - name: Download libevent
+      id: libevent
+      uses: mercury233/action-cache-download-file@v1.1.0
       with:
-        name: server-dependencies
-        path: .
+        url: https://github.com/libevent/libevent/releases/download/release-2.1.13-stable/libevent-2.1.13-stable.tar.gz
 
     - name: Download premake
       id: premake
@@ -63,7 +63,7 @@ jobs:
       shell: bash
       run: |
         tar xf ${{ steps.libevent.outputs.filepath }}
-        move libevent-2.0.22-stable event
+        mv libevent-2.1.13-stable event
 
     - name: Download lua
       id: lua
@@ -172,11 +172,12 @@ jobs:
         fetch-depth: 1
         submodules: false
 
-    - name: Download dependencies
-      uses: actions/download-artifact@v7
+    - name: Download libevent
+      if: matrix.static-link == true
+      id: server-libevent
+      uses: mercury233/action-cache-download-file@v1.1.0
       with:
-        name: server-dependencies
-        path: .
+        url: https://github.com/libevent/libevent/releases/download/release-2.1.13-stable/libevent-2.1.13-stable.tar.gz
 
     - name: Install dependencies
       if: matrix.static-link != true
@@ -238,6 +239,8 @@ jobs:
     - name: Configure libevent
       if: matrix.static-link == true
       run: |
+        tar xf ${{ steps.server-libevent.outputs.filepath }}
+        mv libevent-2.1.13-stable event
         cd event
         chmod +x configure build-aux/*
         ./configure --disable-openssl --enable-static=yes --enable-shared=no
