@@ -309,7 +309,6 @@ jobs:
         BUILD_ZLIB: 1
       run: |
         ./premake5 gmake ${{ matrix.zip-support && '--server-zip-support' || '' }} \
-          ${{ matrix.pro3 && '--server-pro3-support --log-in-chat' || '' }} \
           ${{ matrix.ygopro3 && '--server-ygopro3-support --log-in-chat' || '' }} \
           ${{ matrix.static-link && '--build-sqlite --build-event' || '' }}
 
@@ -521,15 +520,35 @@ jobs:
           - abi: arm64-v8a
             platform: android_arm64
             output_dir: android_arm64
+            for: ygomobile
           - abi: armeabi-v7a
             platform: android_armeabi_v7a
             output_dir: android_armeabi_v7a
+            for: ygomobile
           - abi: x86
             platform: android_x86
             output_dir: android_x86
+            for: ygomobile
           - abi: x86_64
             platform: android_x86_64
             output_dir: android_x86_64
+            for: ygomobile
+          - abi: arm64-v8a
+            platform: android_arm64
+            output_dir: android_arm64
+            for: ygopro3
+          - abi: armeabi-v7a
+            platform: android_armeabi_v7a
+            output_dir: android_armeabi_v7a
+            for: ygopro3
+          - abi: x86
+            platform: android_x86
+            output_dir: android_x86
+            for: ygopro3
+          - abi: x86_64
+            platform: android_x86_64
+            output_dir: android_x86_64
+            for: ygopro3
 
     env:
       SERVER_YGOPRO3_SUPPORT: 1
@@ -656,7 +675,7 @@ jobs:
     - name: Use premake to generate Android make files
       run: |
         ./premake5 gmake \
-          --server-ygopro3-support \
+          --server-${{ matrix.for }}-support \
           --log-in-chat \
           --build-sqlite \
           --build-event \
@@ -667,12 +686,22 @@ jobs:
           --android-api-level=${ANDROID_API_LEVEL}
 
     - name: Make
+      if: matrix.for == 'ygopro3'
       run: |
         cd build
         make config=release_${{ matrix.platform }} -j$(nproc)
         cd ..
         mkdir so
         mv bin/${{ matrix.output_dir }}/release/libygoserver.so so/libygoserver-${{ matrix.abi }}.so
+
+    - name: Make
+      if: matrix.for == 'ygomobile'
+      run: |
+        cd build
+        make config=release_${{ matrix.platform }} -j$(nproc)
+        cd ..
+        mkdir so
+        mv bin/${{ matrix.output_dir }}/release/libygoserver.so so/libygoserver-ygomobile-${{ matrix.abi }}.so
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v6

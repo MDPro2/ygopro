@@ -8,6 +8,10 @@
 #include <event2/thread.h>
 #include <memory>
 
+#ifdef __ANDROID__
+#include <jni.h>
+#endif
+
 namespace ygo {
 	YGOSERVER_API int start_server(const char* args) {
 		std::vector<char*> argv_vec;
@@ -58,3 +62,27 @@ namespace ygo {
 		NetServer::StopServer();
 	}
 }
+
+#ifdef __ANDROID__
+extern "C"
+JNIEXPORT jint JNICALL
+Java_cn_garymb_ygomobile_network_YGOServer_startServer(
+		JNIEnv* env,
+		jclass,
+		jstring args) {
+	const char* c_args = args ? env->GetStringUTFChars(args, nullptr) : nullptr;
+	int result = ygo::start_server(c_args);
+	if (c_args != nullptr) {
+		env->ReleaseStringUTFChars(args, c_args);
+	}
+	return result;
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_cn_garymb_ygomobile_network_YGOServer_stopServer(
+		JNIEnv*,
+		jclass) {
+	ygo::stop_server();
+}
+#endif

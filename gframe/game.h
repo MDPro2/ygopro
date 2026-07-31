@@ -205,8 +205,10 @@ class Game {
 
 public:
 	bool Initialize();
-#ifdef SERVER_YGOPRO3_SUPPORT
+#if defined(SERVER_YGOMOBILE_SUPPORT) || defined(SERVER_YGOPRO3_SUPPORT)
 	std::wstring base_path;
+#endif
+#ifdef SERVER_YGOPRO3_SUPPORT
 	std::wstring i18n;
 	std::vector<std::string> packs;
 #endif

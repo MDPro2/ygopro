@@ -1,5 +1,5 @@
 if SERVER_MODE then
-    if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT then
+    if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT or SERVER_YGOMOBILE_SUPPORT then
     project "ygoserver"
         kind "SharedLib"
     else
@@ -27,6 +27,10 @@ if SERVER_MODE then
     if SERVER_YGOPRO3_SUPPORT then
         files { "gframe.h", "serverapi.cpp", "serverapi.h" }
         defines { "SERVER_YGOPRO3_SUPPORT" }
+    end
+    if SERVER_YGOMOBILE_SUPPORT then
+        files { "gframe.h", "serverapi.cpp", "serverapi.h" }
+        defines { "SERVER_YGOMOBILE_SUPPORT" }
     end
 
     if SERVER_ZIP_SUPPORT then
@@ -107,7 +111,7 @@ if not SERVER_MODE then
 end
 
     filter "system:windows"
-        if not (SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT) then
+        if not (SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT or SERVER_YGOMOBILE_SUPPORT) then
             entrypoint "mainCRTStartup"
         end
         files "ygopro.rc"

@@ -135,6 +135,10 @@ void Game::MainServerLoop() {
 	std::wstring temp = ygo::mainGame->base_path + L"cdb/cards-" + ygo::mainGame->i18n + L".cdb";
 	const wchar_t* db = temp.c_str();
 	dataManager.LoadDB(db);
+#elif defined(SERVER_YGOMOBILE_SUPPORT)
+	std::wstring temp = ygo::mainGame->base_path + L"cards.cdb";
+	const wchar_t* db = temp.c_str();
+	dataManager.LoadDB(db);
 #else
 	initUtils();
 	dataManager.LoadDB("cards.cdb");
@@ -145,6 +149,9 @@ void Game::MainServerLoop() {
 	dataManager.IrrFileSystem->addFileArchive("data/script.zip", true, false, irr::io::EFAT_ZIP);
 #elif defined(SERVER_PRO3_SUPPORT)
 	dataManager.IrrFileSystem->addFileArchive("Data/script.zip", true, false, irr::io::EFAT_ZIP);
+#elif defined(SERVER_YGOMOBILE_SUPPORT)
+	std::wstring temp = ygo::mainGame->base_path + L"script.zip";
+	dataManager.IrrFileSystem->addFileArchive(irr::io::path(temp), true, false, irr::io::EFAT_ZIP);
 #endif
 
 	unsigned int listen_ip = INADDR_ANY;

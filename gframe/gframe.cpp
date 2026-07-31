@@ -77,11 +77,13 @@ int main(int argc, char* argv[]) {
 	signal(SIGCHLD, SIG_IGN);
 #endif //_WIN32
 	ygo::Game _game;
-#ifdef SERVER_YGOPRO3_SUPPORT
+#if defined(SERVER_YGOMOBILE_SUPPORT) || defined(SERVER_YGOPRO3_SUPPORT)
 	std::wstring_convert<std::codecvt_utf8<wchar_t>> converter;
 	if (argc > 13) {
 		_game.base_path = converter.from_bytes(argv[13]);
 	} else _game.base_path = L"./";
+#endif
+#ifdef SERVER_YGOPRO3_SUPPORT
 	if (argc > 14) {
 		_game.i18n = converter.from_bytes(argv[14]);
 	} else _game.i18n = L"zh-CN";
@@ -144,8 +146,7 @@ int main(int argc, char* argv[]) {
 		parse_wcsv(val, out);
 	};
 
-	load_env_list("YGOPRO_EXPANSIONS", expansions_list);
-#ifdef SERVER_YGOPRO3_SUPPORT
+#if defined(SERVER_YGOMOBILE_SUPPORT) || defined(SERVER_YGOPRO3_SUPPORT)
 	std::wstring expansion = _game.base_path + L"expansions";
 	expansions_list.push_back(expansion);
 #else

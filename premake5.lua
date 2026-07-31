@@ -23,6 +23,7 @@ SERVER_PRO2_SUPPORT = false
 SERVER_TAG_SURRENDER_CONFIRM = false
 SERVER_PRO3_SUPPORT = false
 SERVER_YGOPRO3_SUPPORT = false
+SERVER_YGOMOBILE_SUPPORT = false
 
 BUILD_LZMA = os.istarget("windows")
 
@@ -470,6 +471,11 @@ if GetParam("server-ygopro3-support") then
     SERVER_ZIP_SUPPORT = true
     SERVER_TAG_SURRENDER_CONFIRM = true
 end
+if GetParam("server-ygomobile-support") then
+    SERVER_YGOMOBILE_SUPPORT = true
+    SERVER_ZIP_SUPPORT = true
+    SERVER_TAG_SURRENDER_CONFIRM = true
+end
 if GetParam("server-tag-surrender-confirm") then
     SERVER_TAG_SURRENDER_CONFIRM = true
 end
@@ -684,7 +690,7 @@ workspace "YGOPro"
         ApplyBoolean(boolOption)
     end
 
-    if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT then
+    if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT or SERVER_YGOMOBILE_SUPPORT then
         defines { "LUA_USE_LONGJMP" }
     end
 
@@ -827,7 +833,7 @@ workspace "YGOPro"
     filter { "system:android", "language:C++" }
         linkoptions { "-static-libstdc++" }
 
-if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT then
+if SERVER_PRO3_SUPPORT or SERVER_YGOPRO3_SUPPORT or SERVER_YGOMOBILE_SUPPORT then
     filter "not action:vs*"
         pic "On"
 end
