@@ -42,7 +42,7 @@ jobs:
         submodules: false
 
     - name: Download libevent
-      id: libevent
+      id: server-libevent
       uses: mercury233/action-cache-download-file@v1.1.0
       with:
         url: https://github.com/libevent/libevent/releases/download/release-2.1.13-stable/libevent-2.1.13-stable.tar.gz
@@ -174,7 +174,7 @@ jobs:
         submodules: false
 
     - name: Download libevent
-      id: libevent
+      id: server-libevent
       uses: mercury233/action-cache-download-file@v1.1.0
       with:
         url: https://github.com/libevent/libevent/releases/download/release-2.1.13-stable/libevent-2.1.13-stable.tar.gz
