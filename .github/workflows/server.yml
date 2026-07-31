@@ -431,7 +431,7 @@ jobs:
       - name: Extract libevent
         run: |
           tar xf ${{ steps.libevent.outputs.filepath }}
-          mv libevent-2.1.12-stable event
+          mv libevent-2.1.13-stable event
 
       - name: Configure libevent
         run: |
@@ -597,7 +597,7 @@ jobs:
     - name: Extract libevent
       run: |
         tar xf ${{ steps.libevent.outputs.filepath }}
-        mv libevent-2.1.12-stable event
+        mv libevent-2.1.13-stable event
 
     - name: Configure libevent
       run: |
