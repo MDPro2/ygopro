@@ -35,42 +35,32 @@ jobs:
       contents: write
 
     steps:
-    - name: Checkout repository with submodules
+    - name: Checkout repository
       uses: actions/checkout@v6
       with:
         fetch-depth: 1
-        submodules: true
+        submodules: false
 
-    - name: Update submodules
-      run: |
-        cd ocgcore
-        git checkout master
-        git pull origin master
-        cd ..
-#        cd script
-#        git checkout master
-#        git pull origin master
-#        cd ..
+    - name: Download dependencies
+      uses: actions/download-artifact@v7
+      with:
+        name: server-dependencies
+        path: .
 
     - name: Download premake
       id: premake
-      uses: mercury233/action-cache-download-file@v1.1.0
+      uses: mercury233/action-cache-download-file@3fffc760bf7b992889fcadf1055bc475b1cd7db6
       with:
-        url: https://github.com/premake/premake-core/releases/download/v5.0.0-beta6/premake-5.0.0-beta6-windows.zip
+        url: https://github.com/premake/premake-core/releases/download/v5.0.0-beta8/premake-5.0.0-beta8-windows.zip
         filename: premake5.zip
+        sha256: e64ce2ed8778e0098f63674cca61fe33941b5f0c8d9a4afd651152bdea3758ab
 
     - name: Extract premake
       run: |
         7z x ${{ steps.premake.outputs.filepath }}
 
-    - name: Download libevent
-      id: libevent
-      uses: mercury233/action-cache-download-file@v1.1.0
-      with:
-        url: https://github.com/libevent/libevent/releases/download/release-2.0.22-stable/libevent-2.0.22-stable.tar.gz
-        filename: libevent.tar.gz
-
-    - name: Extract libevent
+    - name: Configure libevent
+      shell: bash
       run: |
         tar xf ${{ steps.libevent.outputs.filepath }}
         move libevent-2.0.22-stable event
@@ -157,7 +147,6 @@ jobs:
         include:
           - name: ubuntu-pro3-so
             os: ubuntu-22.04
-            premake-version: 5.0.0-beta4
             static-link: true
             zip-support: true
             ygopro3: true
@@ -169,38 +158,40 @@ jobs:
             ygopro3: true
 
     runs-on: ${{ matrix.os }}
+    env:
+      USE_SIMD: server
+      SERVER_ZIP_SUPPORT: ${{ matrix.zip-support && '1' || '' }}
+      BUILD_EVENT: ${{ matrix.static-link && '1' || '' }}
+      BUILD_SQLITE: ${{ matrix.static-link && '1' || '' }}
+      BUILD_LZMA: ${{ matrix.static-link && '1' || '' }}
 
     steps:
-    - name: Checkout repository with submodules
+    - name: Checkout repository
       uses: actions/checkout@v6
       with:
         fetch-depth: 1
-        submodules: true
+        submodules: false
 
-    - name: Update submodules
-      run: |
-        cd ocgcore
-        git checkout master
-        git pull origin master
-        cd ..
-#        cd script
-#        git checkout master
-#        git pull origin master
-#        cd ..
+    - name: Download dependencies
+      uses: actions/download-artifact@v7
+      with:
+        name: server-dependencies
+        path: .
 
     - name: Install dependencies
       if: matrix.static-link != true
       run: |
         sudo apt-get update
-        sudo apt-get install -y libevent-dev libsqlite3-dev
+        sudo apt-get install -y libevent-dev libsqlite3-dev liblzma-dev
 
     - name: Download premake
       if: matrix.os == 'ubuntu-22.04'
       id: premake
-      uses: mercury233/action-cache-download-file@v1.1.0
+      uses: mercury233/action-cache-download-file@3fffc760bf7b992889fcadf1055bc475b1cd7db6
       with:
-        url: https://github.com/premake/premake-core/releases/download/v${{ matrix.premake-version }}/premake-${{ matrix.premake-version }}-linux.tar.gz
+        url: https://github.com/premake/premake-core/releases/download/v5.0.0-beta8/premake-5.0.0-beta8-linux.tar.gz
         filename: premake5.tar.gz
+        sha256: 63edd3e7461eebdd45b500a3c7e8ad4e7a67d68f230010f9a97cbb71b4ec59c8
 
     - name: Extract & test premake
       id: extract-premake
@@ -208,6 +199,15 @@ jobs:
       run: |
         tar xf ${{ steps.premake.outputs.filepath }}
         chmod +x ./premake5
+        mkdir premake-test
+        cp ./premake5 ./premake-test
+        cd ./premake-test
+        if ./premake5 --version; then
+          echo "premake=ok" >> $GITHUB_OUTPUT
+        else
+          echo "premake=fail" >> $GITHUB_OUTPUT
+        fi
+        cd ..
 
     - name: Download premake
       if: matrix.os == 'ubuntu-24.04-arm'
@@ -220,19 +220,26 @@ jobs:
       id: libevent
       uses: mercury233/action-cache-download-file@v1.1.0
       with:
-        url: https://github.com/libevent/libevent/releases/download/release-2.1.12-stable/libevent-2.1.12-stable.tar.gz
-        filename: libevent.tar.gz
+        repository: premake/premake-core
+        path: premake-source
+        ref: 2ca338a25ed5f6e62d36c9cd70e5f313953c630d
 
-    - name: Extract libevent
-      if: matrix.static-link == true
+    - name: Build premake (fallback)
+      if: steps.extract-premake.outputs.premake != 'ok'
       run: |
-        tar xf ${{ steps.libevent.outputs.filepath }}
-        mv libevent-2.1.12-stable event
+        sudo apt-get update
+        sudo apt-get install -y uuid-dev
+        cd premake-source
+        chmod +x ./Bootstrap.sh
+        ./Bootstrap.sh
+        cp bin/release/premake5 ../premake5
+        cd ..
 
     - name: Configure libevent
       if: matrix.static-link == true
       run: |
         cd event
+        chmod +x configure build-aux/*
         ./configure --disable-openssl --enable-static=yes --enable-shared=no
         sed -f make-event-config.sed < config.h > ./include/event2/event-config.h
         cd ..
@@ -343,6 +350,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - name: Update submodules
+        run: |
+          cd ocgcore
+          git checkout master
+          git pull origin master
+          cd ..
 
       - name: Install Dependencies
         run: |
