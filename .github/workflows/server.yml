@@ -138,7 +138,6 @@ jobs:
           bin/release/${{ matrix.name }}/${{ matrix.output }}
 
   build-linux:
-    needs: prepare-dependencies
     strategy:
       fail-fast: false
       matrix:
