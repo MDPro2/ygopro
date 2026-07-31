@@ -704,11 +704,20 @@ jobs:
         mv bin/${{ matrix.output_dir }}/release/libygoserver.so so/libygoserver-ygomobile-${{ matrix.abi }}.so
 
     - name: Upload build artifacts
+      if: matrix.for == 'ygopro3'
       uses: actions/upload-artifact@v6
       with:
         name: libygoserver-${{ matrix.abi }}.so
         path: |
           so/libygoserver-${{ matrix.abi }}.so
+  
+    - name: Upload build artifacts
+      if: matrix.for == 'ygomobile'
+      uses: actions/upload-artifact@v6
+      with:
+        name: libygoserver-ygomobile-${{ matrix.abi }}.so
+        path: |
+          so/libygoserver-ygomobile-${{ matrix.abi }}.so
 
   publish:
     needs: [build, build-linux, build-android, combine-macos]
@@ -809,6 +818,46 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./build/YGOPro-Server-ubuntu-arm64-pro3-so/libygoserver.so
           asset_name: libygoserver-linux-arm64.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/libygoserver-arm64-v8a.so/libygoserver-ygomobile-arm64-v8a.so
+          asset_name: libygoserver-ygomobile-arm64-v8a.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/libygoserver-armeabi-v7a.so/libygoserver-ygomobile-armeabi-v7a.so
+          asset_name: libygoserver-ygomobile-armeabi-v7a.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/libygoserver-x86_64.so/libygoserver-ygomobile-x86_64.so
+          asset_name: libygoserver-ygomobile-x86_64.so
+          asset_content_type: application/octet-stream
+
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./build/libygoserver-x86.so/libygoserver-ygomobile-x86.so
+          asset_name: libygoserver-ygomobile-x86.so
           asset_content_type: application/octet-stream
 
       - name: Upload
