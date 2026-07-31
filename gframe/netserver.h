@@ -13,7 +13,7 @@ private:
 	static size_t last_sent;
 	static bufferevent* disconnecting_bev;
 	static int WriteBufferEvent(bufferevent* bufev, const void* data, size_t size);
-	static constexpr uint8_t POS_REVEAL = 0x80;
+	static constexpr uint8_t POS_REVEAL_FLAG = 0x80;
 
 	static bool CanWriteToPlayer(DuelPlayer* dp) {
 		return dp && dp->bev && dp->bev != disconnecting_bev;
@@ -44,13 +44,13 @@ public:
 	static void HandleCTOSPacket(DuelPlayer* dp, unsigned char* data, size_t len);
 	static size_t CreateChatPacket(unsigned char* src, int src_size, unsigned char* dst, uint16_t dst_player_type);
 	static inline bool ShouldHideFacedownCode(uint8_t position) {
-		return (position & POS_FACEDOWN) != 0 && (position & POS_REVEAL) == 0;
+		return (position & POS_FACEDOWN) != 0 && (position & POS_REVEAL_FLAG) == 0;
 	}
 	// TODO: remove this function in the next protocol version, let the client handle the POS_REVEAL flag instead.
 	static inline uint8_t StripRevealFlag(unsigned char* qbuf, size_t offset) {
 		uint32_t info = 0;
 		std::memcpy(&info, qbuf + offset, sizeof info);
-		info &= ~(static_cast<uint32_t>(POS_REVEAL) << 24);
+		info &= ~(static_cast<uint32_t>(POS_REVEAL_FLAG) << 24);
 		std::memcpy(qbuf + offset, &info, sizeof info);
 		return static_cast<uint8_t>(info >> 24);
 	}
