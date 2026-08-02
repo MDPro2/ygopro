@@ -156,7 +156,7 @@ void DeckManager::LoadLFList() {
 	LoadLFListSingle("config/lflist.conf");
 #elif defined(SERVER_PRO3_SUPPORT)
 	LoadLFListSingle("Data/lflist_merged.conf");
-#elif defined(SERVER_YGOPRO3_SUPPORT)
+#elif defined(SERVER_YGOMOBILE_SUPPORT) || defined(SERVER_YGOPRO3_SUPPORT)
 	std::wstring temp = ygo::mainGame->base_path + L"lflist.conf";
 	const wchar_t* lflist = temp.c_str();
 	LoadLFListSingle(lflist);

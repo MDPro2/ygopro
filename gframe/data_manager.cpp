@@ -747,7 +747,7 @@ unsigned char* DataManager::ReadScriptFromIrrFS(const char* script_name, int* sl
 #endif
 unsigned char* DataManager::ReadScriptFromFile(const char* script_name, int* slen) {
 	// If mainGame provides a base path, try that first for relative script names
-#ifdef SERVER_YGOPRO3_SUPPORT
+#if defined(SERVER_YGOMOBILE_SUPPORT) || defined(SERVER_YGOPRO3_SUPPORT)
 	const std::wstring& bp = ygo::mainGame->base_path;
 	if (!bp.empty() && script_name && script_name[0]) {
 		bool absolute = false;
